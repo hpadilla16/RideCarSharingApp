@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { View, Text, TextInput, FlatList, TouchableOpacity, Image, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as Location from 'expo-location';
 import { api } from '../lib/api';
 import { fmtMoney, vehicleLabel, locationLabel } from '../lib/format';
+import { getFavorites } from '../lib/favorites';
 import { colors, spacing, fontSize } from '../lib/theme';
 
 export default function ExploreScreen() {
@@ -12,7 +14,27 @@ export default function ExploreScreen() {
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState('');
-  const [filter, setFilter] = useState('ALL'); // ALL | INSTANT | DELIVERY
+  const [filter, setFilter] = useState('ALL');
+  const [favorites, setFavorites] = useState([]);
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationDenied, setLocationDenied] = useState(false);
+
+  useEffect(() => {
+    // Load favorites
+    getFavorites().then(setFavorites);
+    // Request location
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+          setUserLocation(loc.coords);
+        } else {
+          setLocationDenied(true);
+        }
+      } catch { setLocationDenied(true); }
+    })();
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -52,6 +74,35 @@ export default function ExploreScreen() {
       </View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
+
+      {/* Location status */}
+      {userLocation && (
+        <View style={{ paddingHorizontal: spacing.lg, marginBottom: spacing.sm }}>
+          <Text style={{ fontSize: fontSize.xs, color: colors.success, fontWeight: '600' }}>📍 Location enabled — showing cars near you</Text>
+        </View>
+      )}
+
+      {/* Saved favorites */}
+      {favorites.length > 0 && (
+        <View style={{ marginBottom: spacing.md }}>
+          <Text style={{ paddingHorizontal: spacing.lg, fontSize: fontSize.md, fontWeight: '700', color: colors.ink, marginBottom: spacing.sm }}>❤️ Saved Cars</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.sm }}>
+            {favorites.map((fav) => (
+              <TouchableOpacity key={fav.id} style={{ width: 160, borderRadius: 12, backgroundColor: colors.card, overflow: 'hidden', elevation: 1 }} onPress={() => router.push(`/listing/${fav.id}`)}>
+                {fav.primaryImageUrl ? (
+                  <Image source={{ uri: fav.primaryImageUrl }} style={{ width: 160, height: 90 }} resizeMode="cover" />
+                ) : (
+                  <View style={{ width: 160, height: 90, backgroundColor: colors.border, justifyContent: 'center', alignItems: 'center' }}><Text style={{ color: colors.muted, fontSize: fontSize.xs }}>No Photo</Text></View>
+                )}
+                <View style={{ padding: spacing.sm }}>
+                  <Text style={{ fontWeight: '600', color: colors.ink, fontSize: fontSize.xs }} numberOfLines={1}>{fav.title || fav.vehicleLabel}</Text>
+                  <Text style={{ fontWeight: '700', color: colors.brand, fontSize: fontSize.xs }}>{fmtMoney(fav.baseDailyRate)}/day</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
 
       {/* Filters */}
       <View style={styles.filterRow}>

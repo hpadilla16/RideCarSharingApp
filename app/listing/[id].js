@@ -3,6 +3,7 @@ import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, ActivityIn
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api } from '../../lib/api';
 import { fmtMoney, fmtDateTime, vehicleLabel, locationLabel } from '../../lib/format';
+import { isFavorite, toggleFavorite } from '../../lib/favorites';
 import { colors, spacing, fontSize } from '../../lib/theme';
 
 export default function ListingDetailScreen() {
@@ -12,6 +13,7 @@ export default function ListingDetailScreen() {
   const [hostProfile, setHostProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [faved, setFaved] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -21,6 +23,7 @@ export default function ListingDetailScreen() {
         const match = featured.find((l) => l.id === id);
         setListing(match || null);
         if (!match) setError('Listing not found');
+        if (match?.id) isFavorite(match.id).then(setFaved);
 
         if (match?.host?.id) {
           api(`/api/public/booking/hosts/${match.host.id}`).then((hp) => setHostProfile(hp)).catch(() => {});
@@ -118,7 +121,10 @@ export default function ListingDetailScreen() {
 
       {/* Fixed Book Button */}
       <View style={styles.bookBar}>
-        <View>
+        <TouchableOpacity onPress={async () => { const saved = await toggleFavorite(listing); setFaved(saved); }} style={{ padding: spacing.sm }}>
+          <Text style={{ fontSize: 24 }}>{faved ? '❤️' : '🤍'}</Text>
+        </TouchableOpacity>
+        <View style={{ flex: 1 }}>
           <Text style={styles.bookPrice}>{fmtMoney(listing.baseDailyRate)}/day</Text>
         </View>
         <TouchableOpacity

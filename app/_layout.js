@@ -76,6 +76,13 @@ export default function AppLayout() {
             title: 'Report Issue',
           }}
         />
+        <Tabs.Screen
+          name="review"
+          options={{
+            href: null,
+            title: 'Review',
+          }}
+        />
       </Tabs>
     </>
   );
