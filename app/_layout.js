@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'react-native';
 import { useThemeColors } from '../lib/theme';
 import { registerForPushNotifications, addNotificationResponseListener } from '../lib/notifications';
+import { shouldShowOnboarding } from './onboarding';
 
 export default function AppLayout() {
   const scheme = useColorScheme();
@@ -11,6 +12,10 @@ export default function AppLayout() {
   const router = useRouter();
 
   useEffect(() => {
+    // Check onboarding
+    shouldShowOnboarding().then((show) => {
+      if (show) router.replace('/onboarding');
+    });
     registerForPushNotifications();
     const subscription = addNotificationResponseListener((response) => {
       const data = response?.notification?.request?.content?.data;
@@ -112,6 +117,15 @@ export default function AppLayout() {
             href: null,
             title: 'Map',
             headerShown: false,
+          }}
+        />
+        <Tabs.Screen
+          name="onboarding"
+          options={{
+            href: null,
+            title: 'Welcome',
+            headerShown: false,
+            tabBarStyle: { display: 'none' },
           }}
         />
       </Tabs>

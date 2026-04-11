@@ -18,6 +18,7 @@ export default function CheckoutScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [paymentUrl, setPaymentUrl] = useState(null);
+  const [protectionTier, setProtectionTier] = useState('STANDARD');
 
   useEffect(() => {
     (async () => {
@@ -165,10 +166,40 @@ export default function CheckoutScreen() {
               <Text style={styles.reviewValue}>{customer.email}</Text>
             </View>
 
-            <View style={styles.reviewCard}>
-              <Text style={styles.reviewLabel}>Trip Protection</Text>
-              <Text style={styles.reviewValue}>🛡 Included on every booking</Text>
-            </View>
+            {/* Trip Protection Tier Selection */}
+            <Text style={styles.sectionTitle}>Trip Protection</Text>
+            <Text style={{ fontSize: fontSize.xs, color: colors.muted, marginBottom: spacing.sm }}>Trip Protection is NOT insurance. It is a limited reimbursement program. We recommend carrying personal auto insurance.</Text>
+
+            {[
+              { id: 'BASIC', label: 'Basic', price: 'Free', desc: 'No coverage — you pay for all damages', deductible: 'N/A', limit: 'None' },
+              { id: 'STANDARD', label: 'Standard', price: '$12/day', desc: 'Recommended — covers repair or host deductible', deductible: '$1,000', limit: '$35,000', recommended: true },
+              { id: 'PREMIUM', label: 'Premium', price: '$22/day', desc: 'Full protection + roadside assistance', deductible: '$250', limit: '$50,000' },
+            ].map((tier) => (
+              <TouchableOpacity
+                key={tier.id}
+                style={[styles.tierCard, protectionTier === tier.id && styles.tierCardActive]}
+                onPress={() => setProtectionTier(tier.id)}
+              >
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                    <View style={[styles.tierRadio, protectionTier === tier.id && styles.tierRadioActive]} />
+                    <Text style={{ fontWeight: '700', color: colors.ink, fontSize: fontSize.md }}>{tier.label}</Text>
+                    {tier.recommended && <Text style={{ fontSize: fontSize.xs, color: colors.success, fontWeight: '700' }}>Recommended</Text>}
+                  </View>
+                  <Text style={{ fontWeight: '800', color: colors.brand, fontSize: fontSize.md }}>{tier.price}</Text>
+                </View>
+                <Text style={{ fontSize: fontSize.sm, color: colors.muted, marginTop: 4 }}>{tier.desc}</Text>
+                {tier.id !== 'BASIC' && (
+                  <View style={{ flexDirection: 'row', gap: spacing.lg, marginTop: spacing.xs }}>
+                    <Text style={{ fontSize: fontSize.xs, color: colors.muted }}>Deductible: {tier.deductible}</Text>
+                    <Text style={{ fontSize: fontSize.xs, color: colors.muted }}>Up to: {tier.limit}</Text>
+                  </View>
+                )}
+                {tier.id !== 'BASIC' && (
+                  <Text style={{ fontSize: fontSize.xs, color: colors.success, fontWeight: '600', marginTop: 4 }}>🛡 Host is covered — we reimburse repair cost or their deductible (whichever is less)</Text>
+                )}
+              </TouchableOpacity>
+            ))}
 
             <View style={styles.reviewCard}>
               <Text style={styles.reviewLabel}>Cancellation</Text>
@@ -199,6 +230,10 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: fontSize.md, color: colors.muted, textAlign: 'center', marginBottom: spacing.lg },
   muted: { color: colors.muted },
   error: { color: colors.error, marginBottom: spacing.md, fontSize: fontSize.sm },
+  tierCard: { padding: spacing.md, borderRadius: 14, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card, marginBottom: spacing.sm },
+  tierCardActive: { borderColor: colors.brand, backgroundColor: 'rgba(135,82,254,0.04)' },
+  tierRadio: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: colors.border },
+  tierRadioActive: { borderColor: colors.brand, backgroundColor: colors.brand },
   progressRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
   progressDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.border },
   progressDotActive: { backgroundColor: colors.brand },
