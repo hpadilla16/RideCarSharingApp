@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { useEffect, useState, useRef } from 'react';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { WebView } from 'react-native-webview';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api } from '../lib/api';
 import { fmtMoney, vehicleLabel } from '../lib/format';
 import { colors, spacing, fontSize } from '../lib/theme';
+
+const API_BASE = process.env.EXPO_PUBLIC_API_BASE || 'https://ridefleetmanager.com';
 
 export default function CheckoutScreen() {
   const { listingId } = useLocalSearchParams();
@@ -14,6 +17,7 @@ export default function CheckoutScreen() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [paymentUrl, setPaymentUrl] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -36,7 +40,7 @@ export default function CheckoutScreen() {
     setSubmitting(true);
     setError('');
     try {
-      await api('/api/public/booking/checkout', {
+      const result = await api('/api/public/booking/checkout', {
         method: 'POST',
         body: JSON.stringify({
           searchType: 'CAR_SHARING',
@@ -48,7 +52,17 @@ export default function CheckoutScreen() {
           customer,
         }),
       });
-      setStep(3);
+      // Check if backend returned a payment portal link
+      const portalLink = result?.nextActions?.find((a) => a?.link)?.link
+        || result?.paymentLink
+        || result?.portalLink
+        || null;
+      if (portalLink) {
+        setPaymentUrl(portalLink);
+        setStep('payment');
+      } else {
+        setStep(3);
+      }
     } catch (err) {
       setError(err?.message || 'Unable to complete booking');
     } finally {
@@ -57,6 +71,42 @@ export default function CheckoutScreen() {
   }
 
   if (loading) return <View style={styles.center}><Text style={styles.muted}>Loading...</Text></View>;
+
+  // Payment WebView
+  if (step === 'payment' && paymentUrl) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.bg }}>
+        <View style={styles.paymentHeader}>
+          <Text style={styles.paymentHeaderTitle}>Complete Payment</Text>
+          <TouchableOpacity onPress={() => setStep(3)}>
+            <Text style={{ color: colors.brand, fontWeight: '700' }}>Done</Text>
+          </TouchableOpacity>
+        </View>
+        <WebView
+          source={{ uri: paymentUrl }}
+          style={{ flex: 1 }}
+          startInLoadingState
+          renderLoading={() => (
+            <View style={[styles.center, { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }]}>
+              <ActivityIndicator size="large" color={colors.brand} />
+              <Text style={{ color: colors.muted, marginTop: spacing.md }}>Loading payment portal...</Text>
+            </View>
+          )}
+          onNavigationStateChange={(navState) => {
+            // Detect when payment completes (URL contains success/confirmed/complete)
+            const url = String(navState.url || '').toLowerCase();
+            if (url.includes('success') || url.includes('confirmed') || url.includes('complete') || url.includes('thank')) {
+              setStep(3);
+            }
+          }}
+          onError={() => {
+            setError('Payment page failed to load. Please try again.');
+            setStep(2);
+          }}
+        />
+      </View>
+    );
+  }
 
   if (step === 3) {
     return (
@@ -141,6 +191,8 @@ export default function CheckoutScreen() {
 }
 
 const styles = StyleSheet.create({
+  paymentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.md, paddingTop: spacing.xl, backgroundColor: colors.bg, borderBottomWidth: 1, borderBottomColor: colors.border },
+  paymentHeaderTitle: { fontWeight: '800', color: colors.ink, fontSize: fontSize.lg },
   container: { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg, padding: spacing.xl },
   title: { fontSize: fontSize.xl, fontWeight: '800', color: colors.ink, textAlign: 'center', marginBottom: spacing.sm },
