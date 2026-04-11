@@ -15,6 +15,8 @@ export default function ExploreScreen() {
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [aiParsed, setAiParsed] = useState(null);
   const [favorites, setFavorites] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
   const [locationDenied, setLocationDenied] = useState(false);
@@ -50,9 +52,47 @@ export default function ExploreScreen() {
     })();
   }, []);
 
+  async function handleAiSearch() {
+    if (!searchQuery.trim()) { setAiParsed(null); return; }
+    setSearching(true);
+    try {
+      const intent = await api('/api/public/booking/ai-search/intent', {
+        method: 'POST',
+        body: JSON.stringify({ query: searchQuery.trim() }),
+      });
+      setAiParsed(intent);
+    } catch {
+      setAiParsed(null);
+    } finally {
+      setSearching(false);
+    }
+  }
+
   const filteredListings = listings.filter((l) => {
-    if (filter === 'INSTANT') return l.instantBook;
-    if (filter === 'DELIVERY') return l.fulfillmentMode === 'DELIVERY_ONLY' || l.fulfillmentMode === 'PICKUP_OR_DELIVERY' || l.deliveryAvailable;
+    // Filter tab
+    if (filter === 'INSTANT' && !l.instantBook) return false;
+    if (filter === 'DELIVERY' && l.fulfillmentMode !== 'DELIVERY_ONLY' && l.fulfillmentMode !== 'PICKUP_OR_DELIVERY' && !l.deliveryAvailable) return false;
+
+    // AI search filters
+    if (aiParsed && !aiParsed.fallback) {
+      if (aiParsed.vehicleType) {
+        const vt = String(aiParsed.vehicleType).toLowerCase();
+        const title = String(l.title || '').toLowerCase();
+        const make = String(l.vehicle?.make || '').toLowerCase();
+        const model = String(l.vehicle?.model || '').toLowerCase();
+        if (!title.includes(vt) && !make.includes(vt) && !model.includes(vt)) return false;
+      }
+      if (aiParsed.maxPrice && Number(l.baseDailyRate) > Number(aiParsed.maxPrice)) return false;
+      if (aiParsed.instantBook === true && !l.instantBook) return false;
+    }
+
+    // Text search fallback
+    if (aiParsed?.fallback && aiParsed.query) {
+      const q = aiParsed.query.toLowerCase();
+      const text = `${l.title || ''} ${l.vehicle?.make || ''} ${l.vehicle?.model || ''} ${l.host?.displayName || ''}`.toLowerCase();
+      if (!text.includes(q)) return false;
+    }
+
     return true;
   });
 
@@ -71,13 +111,50 @@ export default function ExploreScreen() {
       <View style={styles.hero}>
         <Text style={styles.heroTitle}>Find your perfect ride</Text>
         <Text style={styles.heroSubtitle}>Browse locally hosted vehicles with trip protection on every booking.</Text>
-        <TouchableOpacity
-          style={{ marginTop: spacing.md, flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignSelf: 'flex-start' }}
-          onPress={() => router.push('/map')}
-        >
-          <Text style={{ fontSize: fontSize.md }}>🗺</Text>
-          <Text style={{ fontWeight: '700', color: colors.brand, fontSize: fontSize.sm }}>View Map</Text>
-        </TouchableOpacity>
+        {/* AI Search Bar */}
+        <View style={{ marginTop: spacing.md, flexDirection: 'row', gap: spacing.sm }}>
+          <TextInput
+            style={{ flex: 1, height: 44, borderWidth: 1, borderColor: colors.border, borderRadius: 22, paddingHorizontal: spacing.md, fontSize: fontSize.sm, backgroundColor: colors.card, color: colors.ink }}
+            placeholder='Try "SUV near airport this weekend"'
+            placeholderTextColor={colors.muted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            onSubmitEditing={handleAiSearch}
+            returnKeyType="search"
+          />
+          <TouchableOpacity
+            style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.brand, justifyContent: 'center', alignItems: 'center' }}
+            onPress={handleAiSearch}
+          >
+            <Text style={{ color: colors.white, fontWeight: '800' }}>{searching ? '...' : '🔍'}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* AI parsed badge */}
+        {aiParsed && !aiParsed.fallback && (
+          <View style={{ marginTop: spacing.sm, flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+            <Text style={{ fontSize: fontSize.xs, color: colors.brand, fontWeight: '700' }}>✨ AI:</Text>
+            {aiParsed.vehicleType && <Text style={styles.aiBadge}>{aiParsed.vehicleType}</Text>}
+            {aiParsed.location && <Text style={styles.aiBadge}>📍 {aiParsed.location}</Text>}
+            {aiParsed.pickupDate && <Text style={styles.aiBadge}>📅 {aiParsed.pickupDate}</Text>}
+            {aiParsed.maxPrice && <Text style={styles.aiBadge}>≤${aiParsed.maxPrice}/day</Text>}
+            {aiParsed.instantBook && <Text style={styles.aiBadge}>⚡ Instant</Text>}
+            {aiParsed.deliveryNeeded && <Text style={styles.aiBadge}>🚗 Delivery</Text>}
+            <TouchableOpacity onPress={() => { setAiParsed(null); setSearchQuery(''); }}>
+              <Text style={{ fontSize: fontSize.xs, color: colors.muted, fontWeight: '600' }}>✕ Clear</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
+          <TouchableOpacity
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}
+            onPress={() => router.push('/map')}
+          >
+            <Text style={{ fontSize: fontSize.md }}>🗺</Text>
+            <Text style={{ fontWeight: '700', color: colors.brand, fontSize: fontSize.sm }}>Map</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -195,4 +272,5 @@ const styles = StyleSheet.create({
   badges: { flexDirection: 'row', gap: spacing.xs },
   badge: { paddingVertical: 2, paddingHorizontal: 8, borderRadius: 6, backgroundColor: 'rgba(135,82,254,0.1)', color: colors.brand, fontSize: fontSize.xs, fontWeight: '700', overflow: 'hidden' },
   badgeRating: { fontSize: fontSize.xs, fontWeight: '700', color: '#f5a623' },
+  aiBadge: { paddingVertical: 2, paddingHorizontal: 8, borderRadius: 6, backgroundColor: 'rgba(135,82,254,0.1)', color: colors.brand, fontSize: fontSize.xs, fontWeight: '600', overflow: 'hidden' },
 });
