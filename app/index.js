@@ -71,6 +71,13 @@ export default function ExploreScreen() {
       <View style={styles.hero}>
         <Text style={styles.heroTitle}>Find your perfect ride</Text>
         <Text style={styles.heroSubtitle}>Browse locally hosted vehicles with trip protection on every booking.</Text>
+        <TouchableOpacity
+          style={{ marginTop: spacing.md, flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignSelf: 'flex-start' }}
+          onPress={() => router.push('/map')}
+        >
+          <Text style={{ fontSize: fontSize.md }}>🗺</Text>
+          <Text style={{ fontWeight: '700', color: colors.brand, fontSize: fontSize.sm }}>View Map</Text>
+        </TouchableOpacity>
       </View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}

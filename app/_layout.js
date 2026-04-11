@@ -1,11 +1,24 @@
-import { Tabs } from 'expo-router';
+import { useEffect } from 'react';
+import { Tabs, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'react-native';
 import { useThemeColors } from '../lib/theme';
+import { registerForPushNotifications, addNotificationResponseListener } from '../lib/notifications';
 
 export default function AppLayout() {
   const scheme = useColorScheme();
   const c = useThemeColors();
+  const router = useRouter();
+
+  useEffect(() => {
+    registerForPushNotifications();
+    const subscription = addNotificationResponseListener((response) => {
+      const data = response?.notification?.request?.content?.data;
+      if (data?.chatToken) router.push(`/chat/${data.chatToken}`);
+      else if (data?.tripId) router.push('/trips');
+    });
+    return () => subscription?.remove();
+  }, []);
   return (
     <>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
@@ -91,6 +104,14 @@ export default function AppLayout() {
           options={{
             href: null,
             title: 'Inspection',
+          }}
+        />
+        <Tabs.Screen
+          name="map"
+          options={{
+            href: null,
+            title: 'Map',
+            headerShown: false,
           }}
         />
       </Tabs>
