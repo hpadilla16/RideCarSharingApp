@@ -1,19 +1,25 @@
 import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Switch } from 'react-native';
 import { readGuestSession, clearGuestSession } from '../lib/api';
+import { isBiometricAvailable, isBiometricEnabled, setBiometricEnabled } from '../lib/biometric';
 import { colors, spacing, fontSize } from '../lib/theme';
 
 export default function AccountScreen() {
   const router = useRouter();
   const [customer, setCustomer] = useState(null);
   const [loggedIn, setLoggedIn] = useState(false);
+  const [bioAvailable, setBioAvailable] = useState(false);
+  const [bioEnabled, setBioEnabled] = useState(false);
 
   useEffect(() => {
     (async () => {
       const { token, customer: c } = await readGuestSession();
       setLoggedIn(!!token);
       setCustomer(c);
+      setBioAvailable(await isBiometricAvailable());
+      setBioEnabled(await isBiometricEnabled());
     })();
   }, []);
 
@@ -62,6 +68,20 @@ export default function AccountScreen() {
           <Text style={styles.menuText}>Report an Issue</Text>
           <Text style={styles.menuArrow}>→</Text>
         </TouchableOpacity>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/inspection')}>
+          <Text style={styles.menuText}>Vehicle Inspection</Text>
+          <Text style={styles.menuArrow}>→</Text>
+        </TouchableOpacity>
+        {bioAvailable && (
+          <View style={[styles.menuItem, { justifyContent: 'space-between' }]}>
+            <Text style={styles.menuText}>Biometric Login</Text>
+            <Switch
+              value={bioEnabled}
+              onValueChange={async (val) => { await setBiometricEnabled(val); setBioEnabled(val); }}
+              trackColor={{ true: colors.brand }}
+            />
+          </View>
+        )}
       </View>
 
       <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>

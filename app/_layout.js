@@ -1,19 +1,22 @@
 import { Tabs } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { colors } from '../lib/theme';
+import { useColorScheme } from 'react-native';
+import { useThemeColors } from '../lib/theme';
 
 export default function AppLayout() {
+  const scheme = useColorScheme();
+  const c = useThemeColors();
   return (
     <>
-      <StatusBar style="dark" />
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <Tabs
         screenOptions={{
-          headerStyle: { backgroundColor: colors.bg },
-          headerTintColor: colors.ink,
+          headerStyle: { backgroundColor: c.bg },
+          headerTintColor: c.ink,
           headerTitleStyle: { fontWeight: '700' },
-          tabBarActiveTintColor: colors.brand,
-          tabBarInactiveTintColor: colors.muted,
-          tabBarStyle: { backgroundColor: colors.white, borderTopColor: colors.border },
+          tabBarActiveTintColor: c.brand,
+          tabBarInactiveTintColor: c.muted,
+          tabBarStyle: { backgroundColor: c.card, borderTopColor: c.border },
         }}
       >
         <Tabs.Screen
@@ -81,6 +84,13 @@ export default function AppLayout() {
           options={{
             href: null,
             title: 'Review',
+          }}
+        />
+        <Tabs.Screen
+          name="inspection"
+          options={{
+            href: null,
+            title: 'Inspection',
           }}
         />
       </Tabs>
