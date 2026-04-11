@@ -19,6 +19,8 @@ export default function CheckoutScreen() {
   const [error, setError] = useState('');
   const [paymentUrl, setPaymentUrl] = useState(null);
   const [protectionTier, setProtectionTier] = useState('STANDARD');
+  const [declinedProtection, setDeclinedProtection] = useState(false);
+  const [ownInsuranceConfirmed, setOwnInsuranceConfirmed] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -35,8 +37,13 @@ export default function CheckoutScreen() {
   }, [listingId]);
 
   const isInfoComplete = customer.firstName.trim() && customer.lastName.trim() && customer.email.trim() && customer.phone.trim();
+  const isProtectionSelected = protectionTier !== 'BASIC' || (declinedProtection && ownInsuranceConfirmed);
 
   async function handleSubmit() {
+    if (!isProtectionSelected) {
+      setError('Please select a Trip Protection tier or confirm you have your own insurance.');
+      return;
+    }
     if (!isInfoComplete) { setError('Please fill all fields'); return; }
     setSubmitting(true);
     setError('');
@@ -168,12 +175,12 @@ export default function CheckoutScreen() {
 
             {/* Trip Protection Tier Selection */}
             <Text style={styles.sectionTitle}>Trip Protection</Text>
-            <Text style={{ fontSize: fontSize.xs, color: colors.muted, marginBottom: spacing.sm }}>Trip Protection is NOT insurance. It is a limited reimbursement program. We recommend carrying personal auto insurance.</Text>
+            <Text style={{ fontSize: fontSize.xs, color: colors.muted, marginBottom: spacing.sm }}>Trip Protection is NOT insurance. It is a limited program where Ride reimburses the host's insurance deductible only. Your own auto insurance and the host's auto insurance are the primary coverage. Ride does not cover repair costs, liability claims, or property damage directly.</Text>
 
             {[
-              { id: 'BASIC', label: 'Basic', price: 'Free', desc: 'No coverage — you pay for all damages', deductible: 'N/A', limit: 'None' },
-              { id: 'STANDARD', label: 'Standard', price: '$12/day', desc: 'Recommended — covers repair or host deductible', deductible: '$1,000', limit: '$35,000', recommended: true },
-              { id: 'PREMIUM', label: 'Premium', price: '$22/day', desc: 'Full protection + roadside assistance', deductible: '$250', limit: '$50,000' },
+              { id: 'BASIC', label: 'Basic', price: 'Free', desc: 'No deductible reimbursement — you pay for all damages and file with host\'s insurer directly', deductible: 'N/A', limit: 'N/A' },
+              { id: 'STANDARD', label: 'Standard', price: '$12/day', desc: 'Recommended — Ride reimburses the host\'s insurance deductible so you don\'t pay out of pocket', deductible: 'Up to $1,000', limit: 'Host deductible', recommended: true },
+              { id: 'PREMIUM', label: 'Premium', price: '$22/day', desc: 'Ride reimburses host\'s insurance deductible + roadside assistance included', deductible: 'Up to $2,500', limit: 'Host deductible + roadside' },
             ].map((tier) => (
               <TouchableOpacity
                 key={tier.id}
@@ -196,10 +203,40 @@ export default function CheckoutScreen() {
                   </View>
                 )}
                 {tier.id !== 'BASIC' && (
-                  <Text style={{ fontSize: fontSize.xs, color: colors.success, fontWeight: '600', marginTop: 4 }}>🛡 Host is covered — we pay the host's insurance deductible (host must carry minimum required insurance)</Text>
+                  <Text style={{ fontSize: fontSize.xs, color: colors.success, fontWeight: '600', marginTop: 4 }}>🛡 Ride reimburses the host's insurance deductible — host must carry valid auto insurance with state minimums</Text>
                 )}
               </TouchableOpacity>
             ))}
+
+            {/* Decline with own insurance option */}
+            <TouchableOpacity
+              style={[styles.tierCard, declinedProtection && styles.tierCardActive, { borderColor: declinedProtection ? colors.warning : colors.border }]}
+              onPress={() => { setDeclinedProtection(!declinedProtection); if (!declinedProtection) setProtectionTier('BASIC'); }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                <View style={[styles.tierRadio, declinedProtection && { borderColor: colors.warning, backgroundColor: colors.warning }]} />
+                <Text style={{ fontWeight: '700', color: colors.ink, fontSize: fontSize.md }}>I have my own insurance</Text>
+              </View>
+              <Text style={{ fontSize: fontSize.sm, color: colors.muted, marginTop: 4 }}>I decline Trip Protection and confirm I carry personal auto insurance that covers peer-to-peer rentals.</Text>
+              {declinedProtection && (
+                <TouchableOpacity
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm }}
+                  onPress={() => setOwnInsuranceConfirmed(!ownInsuranceConfirmed)}
+                >
+                  <View style={{ width: 20, height: 20, borderRadius: 4, borderWidth: 2, borderColor: ownInsuranceConfirmed ? colors.brand : colors.border, backgroundColor: ownInsuranceConfirmed ? colors.brand : 'transparent', justifyContent: 'center', alignItems: 'center' }}>
+                    {ownInsuranceConfirmed && <Text style={{ color: colors.white, fontSize: 12, fontWeight: '800' }}>✓</Text>}
+                  </View>
+                  <Text style={{ flex: 1, fontSize: fontSize.xs, color: colors.ink }}>I confirm I carry valid auto insurance and accept full financial responsibility for any damages not covered by my policy.</Text>
+                </TouchableOpacity>
+              )}
+            </TouchableOpacity>
+
+            {/* Exclusions */}
+            <View style={{ padding: spacing.md, backgroundColor: 'rgba(255,194,88,0.06)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,194,88,0.15)' }}>
+              <Text style={{ fontWeight: '700', color: colors.warning, fontSize: fontSize.sm, marginBottom: spacing.xs }}>⚠️ NOT covered by any tier:</Text>
+              <Text style={{ fontSize: fontSize.xs, color: colors.muted, lineHeight: 18 }}>Tires, glass/windshield, wear and tear, mechanical breakdown, interior damage from normal use, personal property, liability to others, unauthorized drivers, off-road or illegal use.</Text>
+              <Text style={{ fontSize: fontSize.xs, color: colors.brand, fontWeight: '600', marginTop: spacing.xs }}>Tire Protection ($5/day), Glass Protection ($4/day), and Roadside Assistance ($6/day) may be available as add-ons depending on the host.</Text>
+            </View>
 
             <View style={styles.reviewCard}>
               <Text style={styles.reviewLabel}>Cancellation</Text>
