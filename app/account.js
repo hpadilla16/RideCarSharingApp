@@ -58,7 +58,7 @@ export default function AccountScreen() {
           <Text style={styles.menuText}>Reviews</Text>
           <Text style={styles.menuArrow}>→</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => {}}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/issue')}>
           <Text style={styles.menuText}>Report an Issue</Text>
           <Text style={styles.menuArrow}>→</Text>
         </TouchableOpacity>

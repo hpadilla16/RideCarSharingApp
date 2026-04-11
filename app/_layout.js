@@ -62,6 +62,20 @@ export default function AppLayout() {
             title: 'Sign In',
           }}
         />
+        <Tabs.Screen
+          name="chat/[token]"
+          options={{
+            href: null,
+            title: 'Trip Chat',
+          }}
+        />
+        <Tabs.Screen
+          name="issue"
+          options={{
+            href: null,
+            title: 'Report Issue',
+          }}
+        />
       </Tabs>
     </>
   );
