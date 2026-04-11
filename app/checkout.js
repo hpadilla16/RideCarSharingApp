@@ -1,0 +1,169 @@
+import { useEffect, useState } from 'react';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { api } from '../lib/api';
+import { fmtMoney, vehicleLabel } from '../lib/format';
+import { colors, spacing, fontSize } from '../lib/theme';
+
+export default function CheckoutScreen() {
+  const { listingId } = useLocalSearchParams();
+  const router = useRouter();
+  const [listing, setListing] = useState(null);
+  const [step, setStep] = useState(1);
+  const [customer, setCustomer] = useState({ firstName: '', lastName: '', email: '', phone: '' });
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const boot = await api('/api/public/booking/bootstrap');
+        const match = (boot?.featuredCarSharingListings || []).find((l) => l.id === listingId);
+        setListing(match || null);
+      } catch (err) {
+        setError(err?.message || 'Unable to load listing');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [listingId]);
+
+  const isInfoComplete = customer.firstName.trim() && customer.lastName.trim() && customer.email.trim() && customer.phone.trim();
+
+  async function handleSubmit() {
+    if (!isInfoComplete) { setError('Please fill all fields'); return; }
+    setSubmitting(true);
+    setError('');
+    try {
+      await api('/api/public/booking/checkout', {
+        method: 'POST',
+        body: JSON.stringify({
+          searchType: 'CAR_SHARING',
+          listingId,
+          pickupLocationId: listing?.location?.id || '',
+          returnLocationId: listing?.location?.id || '',
+          pickupAt: new Date(Date.now() + 86400000).toISOString(),
+          returnAt: new Date(Date.now() + 86400000 * 4).toISOString(),
+          customer,
+        }),
+      });
+      setStep(3);
+    } catch (err) {
+      setError(err?.message || 'Unable to complete booking');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (loading) return <View style={styles.center}><Text style={styles.muted}>Loading...</Text></View>;
+
+  if (step === 3) {
+    return (
+      <View style={styles.center}>
+        <Text style={{ fontSize: 48, marginBottom: spacing.md }}>🎉</Text>
+        <Text style={styles.title}>Booking Confirmed!</Text>
+        <Text style={styles.subtitle}>Check your email for trip details and next steps.</Text>
+        <TouchableOpacity style={styles.btn} onPress={() => router.replace('/trips')}>
+          <Text style={styles.btnText}>View My Trips</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  return (
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.lg, paddingBottom: 60 }}>
+        {/* Progress */}
+        <View style={styles.progressRow}>
+          <View style={[styles.progressDot, step >= 1 && styles.progressDotActive]} />
+          <View style={[styles.progressLine, step >= 2 && styles.progressLineActive]} />
+          <View style={[styles.progressDot, step >= 2 && styles.progressDotActive]} />
+        </View>
+        <Text style={styles.stepLabel}>Step {step} of 2</Text>
+
+        {/* Vehicle summary */}
+        {listing && (
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryTitle}>{listing.title || vehicleLabel(listing)}</Text>
+            <Text style={styles.summaryPrice}>{fmtMoney(listing.baseDailyRate)}/day</Text>
+          </View>
+        )}
+
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+
+        {step === 1 && (
+          <>
+            <Text style={styles.sectionTitle}>Your Information</Text>
+            <TextInput style={styles.input} placeholder="First name" placeholderTextColor={colors.muted} value={customer.firstName} onChangeText={(v) => setCustomer((c) => ({ ...c, firstName: v }))} />
+            <TextInput style={styles.input} placeholder="Last name" placeholderTextColor={colors.muted} value={customer.lastName} onChangeText={(v) => setCustomer((c) => ({ ...c, lastName: v }))} />
+            <TextInput style={styles.input} placeholder="Email" placeholderTextColor={colors.muted} value={customer.email} onChangeText={(v) => setCustomer((c) => ({ ...c, email: v }))} keyboardType="email-address" autoCapitalize="none" />
+            <TextInput style={styles.input} placeholder="Phone" placeholderTextColor={colors.muted} value={customer.phone} onChangeText={(v) => setCustomer((c) => ({ ...c, phone: v }))} keyboardType="phone-pad" />
+
+            <TouchableOpacity style={[styles.btn, !isInfoComplete && styles.btnDisabled]} onPress={() => isInfoComplete && setStep(2)} disabled={!isInfoComplete}>
+              <Text style={styles.btnText}>Continue</Text>
+            </TouchableOpacity>
+          </>
+        )}
+
+        {step === 2 && (
+          <>
+            <Text style={styles.sectionTitle}>Review & Confirm</Text>
+            <View style={styles.reviewCard}>
+              <Text style={styles.reviewLabel}>Guest</Text>
+              <Text style={styles.reviewValue}>{customer.firstName} {customer.lastName}</Text>
+              <Text style={styles.reviewValue}>{customer.email}</Text>
+            </View>
+
+            <View style={styles.reviewCard}>
+              <Text style={styles.reviewLabel}>Trip Protection</Text>
+              <Text style={styles.reviewValue}>🛡 Included on every booking</Text>
+            </View>
+
+            <View style={styles.reviewCard}>
+              <Text style={styles.reviewLabel}>Cancellation</Text>
+              <Text style={styles.reviewValue}>Free cancellation up to 24h before pickup</Text>
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+              <TouchableOpacity style={styles.ghostBtn} onPress={() => setStep(1)}>
+                <Text style={styles.ghostBtnText}>← Back</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.btn, { flex: 1 }]} onPress={handleSubmit} disabled={submitting}>
+                <Text style={styles.btnText}>{submitting ? 'Confirming...' : 'Confirm Booking'}</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg, padding: spacing.xl },
+  title: { fontSize: fontSize.xl, fontWeight: '800', color: colors.ink, textAlign: 'center', marginBottom: spacing.sm },
+  subtitle: { fontSize: fontSize.md, color: colors.muted, textAlign: 'center', marginBottom: spacing.lg },
+  muted: { color: colors.muted },
+  error: { color: colors.error, marginBottom: spacing.md, fontSize: fontSize.sm },
+  progressRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
+  progressDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.border },
+  progressDotActive: { backgroundColor: colors.brand },
+  progressLine: { width: 60, height: 2, backgroundColor: colors.border, marginHorizontal: spacing.xs },
+  progressLineActive: { backgroundColor: colors.brand },
+  stepLabel: { textAlign: 'center', fontSize: fontSize.sm, color: colors.muted, marginBottom: spacing.lg },
+  summaryCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.md, backgroundColor: colors.card, borderRadius: 14, marginBottom: spacing.lg },
+  summaryTitle: { fontWeight: '700', color: colors.ink, fontSize: fontSize.md, flex: 1 },
+  summaryPrice: { fontWeight: '800', color: colors.brand, fontSize: fontSize.md },
+  sectionTitle: { fontSize: fontSize.lg, fontWeight: '700', color: colors.ink, marginBottom: spacing.md },
+  input: { height: 50, borderWidth: 1, borderColor: colors.border, borderRadius: 14, paddingHorizontal: spacing.md, fontSize: fontSize.md, backgroundColor: colors.card, color: colors.ink, marginBottom: spacing.md },
+  btn: { height: 52, borderRadius: 14, backgroundColor: colors.brand, justifyContent: 'center', alignItems: 'center', marginTop: spacing.sm },
+  btnDisabled: { opacity: 0.5 },
+  btnText: { color: colors.white, fontWeight: '800', fontSize: fontSize.md },
+  ghostBtn: { height: 52, borderRadius: 14, borderWidth: 1, borderColor: colors.border, justifyContent: 'center', alignItems: 'center', paddingHorizontal: spacing.lg, marginTop: spacing.sm },
+  ghostBtnText: { color: colors.brand, fontWeight: '700', fontSize: fontSize.md },
+  reviewCard: { padding: spacing.md, backgroundColor: colors.card, borderRadius: 12, marginBottom: spacing.sm },
+  reviewLabel: { fontSize: fontSize.xs, fontWeight: '700', color: colors.muted, textTransform: 'uppercase', marginBottom: 4 },
+  reviewValue: { fontSize: fontSize.sm, color: colors.ink },
+});
