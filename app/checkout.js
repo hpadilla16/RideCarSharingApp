@@ -196,7 +196,7 @@ export default function CheckoutScreen() {
                   </View>
                 )}
                 {tier.id !== 'BASIC' && (
-                  <Text style={{ fontSize: fontSize.xs, color: colors.success, fontWeight: '600', marginTop: 4 }}>🛡 Host is covered — we reimburse repair cost or their deductible (whichever is less)</Text>
+                  <Text style={{ fontSize: fontSize.xs, color: colors.success, fontWeight: '600', marginTop: 4 }}>🛡 Host is covered — we pay the host's insurance deductible (host must carry minimum required insurance)</Text>
                 )}
               </TouchableOpacity>
             ))}

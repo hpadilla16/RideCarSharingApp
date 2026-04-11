@@ -17,7 +17,7 @@ const slides = [
   {
     emoji: '🛡',
     title: 'Trip Protection',
-    body: 'Every booking includes our Trip Protection Program. Guests choose a tier at checkout:\n\n• Basic — Guest covers all damages (no host coverage)\n• Standard — Up to $35,000 ($1,000 deductible)\n• Premium — Up to $50,000 ($250 deductible)\n\n🛡 FOR HOSTS: When a Guest selects Standard or Premium, you are covered. We reimburse your repair cost or your insurance deductible — whichever is less.\n\nTrip Protection is NOT insurance. It is a limited reimbursement program. All users should carry personal auto insurance.',
+    body: 'Every booking includes our Trip Protection Program. Guests choose a tier at checkout:\n\n• Basic — Guest covers all damages (no host coverage)\n• Standard — Up to $35,000 ($1,000 deductible)\n• Premium — Up to $50,000 ($250 deductible)\n\n🛡 FOR HOSTS: When a Guest selects Standard or Premium, we pay your insurance deductible — the amount your insurer charges before they cover the rest.\n\n⚠️ IMPORTANT FOR HOSTS:\n• Our protection tiers represent the MINIMUM insurance you must carry\n• If you do NOT have the minimum required insurance, Ride is NOT responsible for any damage\n• We only pay your insurance deductible, not the full repair\n• You MUST notify your insurer that you share your vehicle on a P2P platform\n\nTrip Protection is NOT insurance. All users must carry personal auto insurance.',
     accent: '#047857',
   },
   {
