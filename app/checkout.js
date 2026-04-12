@@ -233,14 +233,65 @@ export default function CheckoutScreen() {
 
             {/* Exclusions */}
             <View style={{ padding: spacing.md, backgroundColor: 'rgba(255,194,88,0.06)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,194,88,0.15)' }}>
-              <Text style={{ fontWeight: '700', color: colors.warning, fontSize: fontSize.sm, marginBottom: spacing.xs }}>⚠️ NOT covered by any tier:</Text>
+              <Text style={{ fontWeight: '700', color: colors.warning, fontSize: fontSize.sm, marginBottom: spacing.xs }}>⚠️ NOT covered by any protection tier:</Text>
               <Text style={{ fontSize: fontSize.xs, color: colors.muted, lineHeight: 18 }}>Tires, glass/windshield, wear and tear, mechanical breakdown, interior damage from normal use, personal property, liability to others, unauthorized drivers, off-road or illegal use.</Text>
-              <Text style={{ fontSize: fontSize.xs, color: colors.brand, fontWeight: '600', marginTop: spacing.xs }}>Tire Protection ($5/day), Glass Protection ($4/day), and Roadside Assistance ($6/day) may be available as add-ons depending on the host.</Text>
             </View>
+
+            {/* Optional Add-ons */}
+            <Text style={styles.sectionTitle}>Optional Add-ons</Text>
+            <Text style={{ fontSize: fontSize.xs, color: colors.muted, marginBottom: spacing.sm }}>Available add-ons depend on what the host offers for this vehicle.</Text>
+
+            {[
+              { id: 'TIRE', label: '🛞 Tire Protection', price: '$5/day', desc: 'Blowouts, flat tires, rim damage from road hazards' },
+              { id: 'GLASS', label: '🪟 Glass Protection', price: '$4/day', desc: 'Windshield chips/cracks, window and mirror glass' },
+              { id: 'ROADSIDE', label: '🚨 Roadside Assistance', price: '$6/day', desc: 'Towing, jump start, flat change, lockout, fuel delivery' },
+              { id: 'TOLLPASS', label: '🛣 Toll Pass', price: '$3.50/day', desc: 'Unlimited toll usage — AutoExpreso, SunPass, E-ZPass, TxTag' },
+            ].map((addon) => (
+              <View key={addon.id} style={{ flexDirection: 'row', alignItems: 'center', padding: spacing.sm, marginBottom: spacing.xs, backgroundColor: colors.card, borderRadius: 10, borderWidth: 1, borderColor: colors.border }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontWeight: '600', color: colors.ink, fontSize: fontSize.sm }}>{addon.label}</Text>
+                  <Text style={{ fontSize: fontSize.xs, color: colors.muted }}>{addon.desc}</Text>
+                </View>
+                <Text style={{ fontWeight: '700', color: colors.brand, fontSize: fontSize.sm }}>{addon.price}</Text>
+              </View>
+            ))}
+
+            {/* Key Policies */}
+            <Text style={styles.sectionTitle}>Trip Policies</Text>
 
             <View style={styles.reviewCard}>
               <Text style={styles.reviewLabel}>Cancellation</Text>
-              <Text style={styles.reviewValue}>Free cancellation up to 24h before pickup</Text>
+              <Text style={styles.reviewValue}>Free cancellation up to 48 hours before pickup. 24-48hr: 50% of first day. Under 24hr: 100% of first day. No-show: full trip charged.</Text>
+            </View>
+
+            <View style={styles.reviewCard}>
+              <Text style={styles.reviewLabel}>Mileage</Text>
+              <Text style={styles.reviewValue}>200 miles/day included (host may set different limit). Excess: $0.35/mile.</Text>
+            </View>
+
+            <View style={styles.reviewCard}>
+              <Text style={styles.reviewLabel}>Fuel</Text>
+              <Text style={styles.reviewValue}>Return at same fuel level. Shortage: $5/gal + $25 refueling fee. EV: $0.30/kWh + $15 fee.</Text>
+            </View>
+
+            <View style={styles.reviewCard}>
+              <Text style={styles.reviewLabel}>Late Return</Text>
+              <Text style={styles.reviewValue}>30-min grace period. After: $25/hr. 2+ hours: full extra day. 6+ hours no contact: deposit forfeited.</Text>
+            </View>
+
+            <View style={styles.reviewCard}>
+              <Text style={styles.reviewLabel}>Security Deposit</Text>
+              <Text style={styles.reviewValue}>$250 hold at booking (up to $500 for select vehicles). Released within 48 hours of clean return.</Text>
+            </View>
+
+            <View style={styles.reviewCard}>
+              <Text style={styles.reviewLabel}>Tolls</Text>
+              <Text style={styles.reviewValue}>If vehicle has a toll pass and you add Toll Pass ($3.50/day): unlimited tolls. Without: tolls charged by plate + $5 admin fee per toll.</Text>
+            </View>
+
+            <View style={styles.reviewCard}>
+              <Text style={styles.reviewLabel}>Cleaning</Text>
+              <Text style={styles.reviewValue}>Return vehicle clean. Fees: $30 (light) to $250 (severe). Smoking: $250. Unauthorized pets: $150.</Text>
             </View>
 
             <View style={{ flexDirection: 'row', gap: spacing.sm }}>
