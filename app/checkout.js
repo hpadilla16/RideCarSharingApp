@@ -9,7 +9,7 @@ import { colors, spacing, fontSize } from '../lib/theme';
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE || 'https://ridefleetmanager.com';
 
 export default function CheckoutScreen() {
-  const { listingId } = useLocalSearchParams();
+  const { listingId, pickupAt, returnAt } = useLocalSearchParams();
   const router = useRouter();
   const [listing, setListing] = useState(null);
   const [step, setStep] = useState(1);
@@ -55,8 +55,8 @@ export default function CheckoutScreen() {
           listingId,
           pickupLocationId: listing?.location?.id || '',
           returnLocationId: listing?.location?.id || '',
-          pickupAt: new Date(Date.now() + 86400000).toISOString(),
-          returnAt: new Date(Date.now() + 86400000 * 4).toISOString(),
+          pickupAt: pickupAt || new Date(Date.now() + 86400000).toISOString(),
+          returnAt: returnAt || new Date(Date.now() + 86400000 * 4).toISOString(),
           customer,
         }),
       });

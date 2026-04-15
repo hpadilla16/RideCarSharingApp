@@ -1,19 +1,30 @@
 import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, ActivityIndicator, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { api } from '../../lib/api';
 import { fmtMoney, fmtDateTime, vehicleLabel, locationLabel } from '../../lib/format';
 import { isFavorite, toggleFavorite } from '../../lib/favorites';
 import { colors, spacing, fontSize } from '../../lib/theme';
 
 export default function ListingDetailScreen() {
-  const { id } = useLocalSearchParams();
+  const { id, pickupAt, returnAt } = useLocalSearchParams();
   const router = useRouter();
   const [listing, setListing] = useState(null);
   const [hostProfile, setHostProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [faved, setFaved] = useState(false);
+  const [pickupDate, setPickupDate] = useState(() => {
+    if (pickupAt) return new Date(pickupAt);
+    const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(10, 0, 0, 0); return d;
+  });
+  const [returnDate, setReturnDate] = useState(() => {
+    if (returnAt) return new Date(returnAt);
+    const d = new Date(); d.setDate(d.getDate() + 4); d.setHours(10, 0, 0, 0); return d;
+  });
+  const [showPickupPicker, setShowPickupPicker] = useState(false);
+  const [showReturnPicker, setShowReturnPicker] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -96,6 +107,55 @@ export default function ListingDetailScreen() {
           </View>
         )}
 
+        {/* Trip Dates */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Select Your Dates</Text>
+          <View style={styles.dateRow}>
+            <TouchableOpacity style={styles.dateBtn} onPress={() => setShowPickupPicker(true)}>
+              <Text style={styles.dateLabel}>Pickup</Text>
+              <Text style={styles.dateValue}>{pickupDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Text>
+            </TouchableOpacity>
+            <Text style={styles.dateArrow}>→</Text>
+            <TouchableOpacity style={styles.dateBtn} onPress={() => setShowReturnPicker(true)}>
+              <Text style={styles.dateLabel}>Return</Text>
+              <Text style={styles.dateValue}>{returnDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Text>
+            </TouchableOpacity>
+          </View>
+          {(() => {
+            const days = Math.max(1, Math.round((returnDate - pickupDate) / 86400000));
+            return (
+              <Text style={styles.dateSummary}>
+                {days} day{days !== 1 ? 's' : ''} · Est. {fmtMoney(Number(listing.baseDailyRate) * days)}
+              </Text>
+            );
+          })()}
+          {showPickupPicker && (
+            <DateTimePicker
+              value={pickupDate}
+              mode="date"
+              minimumDate={new Date()}
+              onChange={(e, date) => {
+                setShowPickupPicker(Platform.OS === 'ios');
+                if (date) {
+                  setPickupDate(date);
+                  if (date >= returnDate) setReturnDate(new Date(date.getTime() + 86400000));
+                }
+              }}
+            />
+          )}
+          {showReturnPicker && (
+            <DateTimePicker
+              value={returnDate}
+              mode="date"
+              minimumDate={new Date(pickupDate.getTime() + 86400000)}
+              onChange={(e, date) => {
+                setShowReturnPicker(Platform.OS === 'ios');
+                if (date) setReturnDate(date);
+              }}
+            />
+          )}
+        </View>
+
         {/* Cancellation */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Cancellation Policy</Text>
@@ -129,7 +189,7 @@ export default function ListingDetailScreen() {
         </View>
         <TouchableOpacity
           style={styles.bookBtn}
-          onPress={() => router.push({ pathname: '/checkout', params: { listingId: id } })}
+          onPress={() => router.push({ pathname: '/checkout', params: { listingId: id, pickupAt: pickupDate.toISOString(), returnAt: returnDate.toISOString() } })}
           activeOpacity={0.8}
         >
           <Text style={styles.bookBtnText}>Book This Car</Text>
@@ -160,6 +220,12 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: fontSize.md, fontWeight: '700', color: colors.ink, marginBottom: spacing.sm },
   sectionBody: { fontSize: fontSize.sm, color: colors.muted, lineHeight: 22 },
   reviewCard: { padding: spacing.md, backgroundColor: colors.card, borderRadius: 12, marginBottom: spacing.sm, elevation: 1 },
+  dateRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  dateBtn: { flex: 1, padding: spacing.md, backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border },
+  dateLabel: { fontSize: fontSize.xs, fontWeight: '700', color: colors.muted, textTransform: 'uppercase', marginBottom: 4 },
+  dateValue: { fontSize: fontSize.md, fontWeight: '700', color: colors.ink },
+  dateArrow: { fontSize: fontSize.lg, color: colors.muted },
+  dateSummary: { fontSize: fontSize.sm, fontWeight: '600', color: colors.brand, marginTop: spacing.sm },
   bookBar: { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.lg, backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.border },
   bookPrice: { fontSize: fontSize.lg, fontWeight: '800', color: colors.ink },
   bookBtn: { paddingVertical: 14, paddingHorizontal: 28, borderRadius: 14, backgroundColor: colors.brand },

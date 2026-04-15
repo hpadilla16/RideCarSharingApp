@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Tabs, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../lib/theme';
 import { registerForPushNotifications, addNotificationResponseListener } from '../lib/notifications';
 import { shouldShowOnboarding } from './onboarding';
@@ -12,7 +13,6 @@ export default function AppLayout() {
   const router = useRouter();
 
   useEffect(() => {
-    // Check onboarding
     shouldShowOnboarding().then((show) => {
       if (show) router.replace('/onboarding');
     });
@@ -42,8 +42,8 @@ export default function AppLayout() {
           options={{
             title: 'Explore',
             tabBarLabel: 'Explore',
-            tabBarIcon: () => null,
-            headerTitle: 'Ride Car Sharing',
+            headerShown: false,
+            tabBarIcon: ({ color, size }) => <Ionicons name="search" size={size} color={color} />,
           }}
         />
         <Tabs.Screen
@@ -51,7 +51,7 @@ export default function AppLayout() {
           options={{
             title: 'My Trips',
             tabBarLabel: 'Trips',
-            tabBarIcon: () => null,
+            tabBarIcon: ({ color, size }) => <Ionicons name="car-outline" size={size} color={color} />,
           }}
         />
         <Tabs.Screen
@@ -59,75 +59,23 @@ export default function AppLayout() {
           options={{
             title: 'Account',
             tabBarLabel: 'Account',
-            tabBarIcon: () => null,
+            tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
           }}
         />
-        <Tabs.Screen
-          name="listing/[id]"
-          options={{
-            href: null, // hidden from tabs
-            title: 'Listing',
-          }}
-        />
-        <Tabs.Screen
-          name="checkout"
-          options={{
-            href: null,
-            title: 'Checkout',
-          }}
-        />
-        <Tabs.Screen
-          name="login"
-          options={{
-            href: null,
-            title: 'Sign In',
-          }}
-        />
-        <Tabs.Screen
-          name="chat/[token]"
-          options={{
-            href: null,
-            title: 'Trip Chat',
-          }}
-        />
-        <Tabs.Screen
-          name="issue"
-          options={{
-            href: null,
-            title: 'Report Issue',
-          }}
-        />
-        <Tabs.Screen
-          name="review"
-          options={{
-            href: null,
-            title: 'Review',
-          }}
-        />
-        <Tabs.Screen
-          name="inspection"
-          options={{
-            href: null,
-            title: 'Inspection',
-          }}
-        />
-        <Tabs.Screen
-          name="map"
-          options={{
-            href: null,
-            title: 'Map',
-            headerShown: false,
-          }}
-        />
-        <Tabs.Screen
-          name="onboarding"
-          options={{
-            href: null,
-            title: 'Welcome',
-            headerShown: false,
-            tabBarStyle: { display: 'none' },
-          }}
-        />
+        <Tabs.Screen name="listing/[id]" options={{ href: null, title: 'Listing' }} />
+        <Tabs.Screen name="checkout" options={{ href: null, title: 'Checkout' }} />
+        <Tabs.Screen name="login" options={{ href: null, title: 'Sign In' }} />
+        <Tabs.Screen name="chat/[token]" options={{ href: null, title: 'Trip Chat' }} />
+        <Tabs.Screen name="issue" options={{ href: null, title: 'Report Issue' }} />
+        <Tabs.Screen name="review" options={{ href: null, title: 'Review' }} />
+        <Tabs.Screen name="inspection" options={{ href: null, title: 'Inspection' }} />
+        <Tabs.Screen name="map" options={{ href: null, title: 'Map', headerShown: false }} />
+        <Tabs.Screen name="onboarding" options={{ href: null, title: 'Welcome', headerShown: false }} />
+        <Tabs.Screen name="host/index" options={{ href: null, title: 'Host Dashboard' }} />
+        <Tabs.Screen name="host/login" options={{ href: null, title: 'Host Login' }} />
+        <Tabs.Screen name="host/trips" options={{ href: null, title: 'Host Trips' }} />
+        <Tabs.Screen name="host/earnings" options={{ href: null, title: 'Host Earnings' }} />
+        <Tabs.Screen name="host/listings" options={{ href: null, title: 'Host Listings' }} />
       </Tabs>
     </>
   );

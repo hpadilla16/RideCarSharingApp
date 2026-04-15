@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
-import { View, Text, TextInput, FlatList, TouchableOpacity, Image, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, FlatList, TouchableOpacity, Image, ScrollView, StyleSheet, ActivityIndicator, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Location from 'expo-location';
 import { api } from '../lib/api';
 import { fmtMoney, vehicleLabel, locationLabel } from '../lib/format';
@@ -20,6 +23,17 @@ export default function ExploreScreen() {
   const [favorites, setFavorites] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
   const [locationDenied, setLocationDenied] = useState(false);
+
+  // Date-based search
+  const [pickupDate, setPickupDate] = useState(() => {
+    const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(10, 0, 0, 0); return d;
+  });
+  const [returnDate, setReturnDate] = useState(() => {
+    const d = new Date(); d.setDate(d.getDate() + 4); d.setHours(10, 0, 0, 0); return d;
+  });
+  const [showPickupPicker, setShowPickupPicker] = useState(false);
+  const [showReturnPicker, setShowReturnPicker] = useState(false);
+  const [datesSearched, setDatesSearched] = useState(false);
 
   useEffect(() => {
     // Load favorites
@@ -51,6 +65,42 @@ export default function ExploreScreen() {
       }
     })();
   }, []);
+
+  async function handleDateSearch() {
+    setSearching(true);
+    setError('');
+    try {
+      // Get location IDs from bootstrap data
+      const locationIds = (bootstrap?.locations || []).map((l) => l.id).filter(Boolean);
+      const searchPlaceIds = (bootstrap?.carSharingSearchPlaces || []).map((p) => p.id).filter(Boolean);
+      const body = {
+        pickupAt: pickupDate.toISOString(),
+        returnAt: returnDate.toISOString(),
+      };
+      if (locationIds.length > 0) body.locationIds = locationIds;
+      if (searchPlaceIds.length > 0) body.searchPlaceIds = searchPlaceIds;
+      // Need at least one location param
+      if (!locationIds.length && !searchPlaceIds.length) {
+        // Fallback: just show featured listings filtered client-side
+        setDatesSearched(true);
+        setSearching(false);
+        return;
+      }
+      const results = await api('/api/public/booking/car-sharing-search', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+      setListings(Array.isArray(results) ? results : results?.listings || results?.results || []);
+      setDatesSearched(true);
+    } catch (err) {
+      // Fallback to featured listings if search fails
+      setListings(bootstrap?.featuredCarSharingListings || []);
+      setError('Search unavailable — showing featured cars');
+      setDatesSearched(true);
+    } finally {
+      setSearching(false);
+    }
+  }
 
   async function handleAiSearch() {
     if (!searchQuery.trim()) { setAiParsed(null); return; }
@@ -108,54 +158,138 @@ export default function ExploreScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
       {/* Hero */}
-      <View style={styles.hero}>
-        <Text style={styles.heroTitle}>Find your perfect ride</Text>
-        <Text style={styles.heroSubtitle}>Browse locally hosted vehicles with trip protection on every booking.</Text>
-        {/* AI Search Bar */}
-        <View style={{ marginTop: spacing.md, flexDirection: 'row', gap: spacing.sm }}>
-          <TextInput
-            style={{ flex: 1, height: 44, borderWidth: 1, borderColor: colors.border, borderRadius: 22, paddingHorizontal: spacing.md, fontSize: fontSize.sm, backgroundColor: colors.card, color: colors.ink }}
-            placeholder='Try "SUV near airport this weekend"'
-            placeholderTextColor={colors.muted}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            onSubmitEditing={handleAiSearch}
-            returnKeyType="search"
-          />
-          <TouchableOpacity
-            style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.brand, justifyContent: 'center', alignItems: 'center' }}
-            onPress={handleAiSearch}
-          >
-            <Text style={{ color: colors.white, fontWeight: '800' }}>{searching ? '...' : '🔍'}</Text>
+      <LinearGradient
+        colors={['#1a1340', '#2d1f6e', '#8752FE']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.hero}
+      >
+        {/* Logo lockup */}
+        <View style={styles.logoBadge}>
+          <Ionicons name="car-sport" size={20} color="#fff" />
+          <Text style={styles.logoText}>Ride</Text>
+        </View>
+
+        <Text style={styles.heroTitle}>Find your{'\n'}perfect ride</Text>
+        <Text style={styles.heroSubtitle}>
+          Airport-ready rentals, curated car sharing, and trip protection on every booking.
+        </Text>
+
+        {/* Date pickers */}
+        <View style={styles.dateCard}>
+          <TouchableOpacity style={styles.dateField} onPress={() => setShowPickupPicker(true)}>
+            <Ionicons name="calendar-outline" size={16} color="#8752FE" />
+            <View>
+              <Text style={styles.dateFieldLabel}>Pickup</Text>
+              <Text style={styles.dateFieldValue}>
+                {pickupDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' })}
+              </Text>
+            </View>
           </TouchableOpacity>
+          <View style={styles.dateDivider} />
+          <TouchableOpacity style={styles.dateField} onPress={() => setShowReturnPicker(true)}>
+            <Ionicons name="calendar-outline" size={16} color="#8752FE" />
+            <View>
+              <Text style={styles.dateFieldLabel}>Return</Text>
+              <Text style={styles.dateFieldValue}>
+                {returnDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' })}
+              </Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.dateSearchBtn} onPress={handleDateSearch}>
+            {searching ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Ionicons name="search" size={18} color="#fff" />
+            )}
+          </TouchableOpacity>
+        </View>
+        {showPickupPicker && (
+          <DateTimePicker
+            value={pickupDate}
+            mode="date"
+            minimumDate={new Date()}
+            onChange={(e, date) => {
+              setShowPickupPicker(Platform.OS === 'ios');
+              if (date) {
+                date.setHours(10, 0, 0, 0);
+                setPickupDate(date);
+                if (date >= returnDate) {
+                  const r = new Date(date); r.setDate(r.getDate() + 3); r.setHours(10, 0, 0, 0);
+                  setReturnDate(r);
+                }
+              }
+            }}
+          />
+        )}
+        {showReturnPicker && (
+          <DateTimePicker
+            value={returnDate}
+            mode="date"
+            minimumDate={new Date(pickupDate.getTime() + 86400000)}
+            onChange={(e, date) => {
+              setShowReturnPicker(Platform.OS === 'ios');
+              if (date) { date.setHours(10, 0, 0, 0); setReturnDate(date); }
+            }}
+          />
+        )}
+        <Text style={styles.dateTripLength}>
+          {Math.round((returnDate - pickupDate) / 86400000)} day trip
+        </Text>
+
+        {/* Search bar */}
+        <View style={styles.searchContainer}>
+          <View style={styles.searchBar}>
+            <Ionicons name="search" size={18} color={colors.muted} style={{ marginLeft: spacing.md }} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder='Try "SUV near airport this weekend"'
+              placeholderTextColor="rgba(107,122,154,0.7)"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              onSubmitEditing={handleAiSearch}
+              returnKeyType="search"
+            />
+            <TouchableOpacity style={styles.searchBtn} onPress={handleAiSearch}>
+              {searching ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Ionicons name="arrow-forward" size={18} color="#fff" />
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* AI parsed badge */}
         {aiParsed && !aiParsed.fallback && (
-          <View style={{ marginTop: spacing.sm, flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
-            <Text style={{ fontSize: fontSize.xs, color: colors.brand, fontWeight: '700' }}>✨ AI:</Text>
-            {aiParsed.vehicleType && <Text style={styles.aiBadge}>{aiParsed.vehicleType}</Text>}
-            {aiParsed.location && <Text style={styles.aiBadge}>📍 {aiParsed.location}</Text>}
-            {aiParsed.pickupDate && <Text style={styles.aiBadge}>📅 {aiParsed.pickupDate}</Text>}
-            {aiParsed.maxPrice && <Text style={styles.aiBadge}>≤${aiParsed.maxPrice}/day</Text>}
-            {aiParsed.instantBook && <Text style={styles.aiBadge}>⚡ Instant</Text>}
-            {aiParsed.deliveryNeeded && <Text style={styles.aiBadge}>🚗 Delivery</Text>}
+          <View style={styles.aiRow}>
+            {aiParsed.vehicleType && <Text style={styles.aiBadgeHero}>{aiParsed.vehicleType}</Text>}
+            {aiParsed.location && <Text style={styles.aiBadgeHero}>{aiParsed.location}</Text>}
+            {aiParsed.pickupDate && <Text style={styles.aiBadgeHero}>{aiParsed.pickupDate}</Text>}
+            {aiParsed.maxPrice && <Text style={styles.aiBadgeHero}>{'<'}${aiParsed.maxPrice}/day</Text>}
+            {aiParsed.instantBook && <Text style={styles.aiBadgeHero}>Instant</Text>}
             <TouchableOpacity onPress={() => { setAiParsed(null); setSearchQuery(''); }}>
-              <Text style={{ fontSize: fontSize.xs, color: colors.muted, fontWeight: '600' }}>✕ Clear</Text>
+              <Text style={{ fontSize: fontSize.xs, color: 'rgba(255,255,255,0.6)', fontWeight: '600' }}>Clear</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
-          <TouchableOpacity
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}
-            onPress={() => router.push('/map')}
-          >
-            <Text style={{ fontSize: fontSize.md }}>🗺</Text>
-            <Text style={{ fontWeight: '700', color: colors.brand, fontSize: fontSize.sm }}>Map</Text>
+        {/* Quick actions */}
+        <View style={styles.quickRow}>
+          <TouchableOpacity style={styles.quickBtn} onPress={() => router.push('/map')}>
+            <Ionicons name="map-outline" size={16} color="#fff" />
+            <Text style={styles.quickBtnText}>Map View</Text>
           </TouchableOpacity>
+          <View style={styles.quickBtn}>
+            <Ionicons name="shield-checkmark-outline" size={16} color="#1fc7aa" />
+            <Text style={styles.quickBtnText}>Trip Protection</Text>
+          </View>
+          <View style={styles.quickBtn}>
+            <Ionicons name="flash-outline" size={16} color="#fbbf24" />
+            <Text style={styles.quickBtnText}>Instant Book</Text>
+          </View>
         </View>
-      </View>
+      </LinearGradient>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -203,16 +337,27 @@ export default function ExploreScreen() {
         ))}
       </View>
 
-      {/* Listings */}
+      {/* Listings header */}
+      <View style={{ paddingHorizontal: spacing.lg, marginBottom: spacing.sm }}>
+        <Text style={{ fontSize: fontSize.lg, fontWeight: '800', color: colors.ink }}>
+          {datesSearched ? 'Available Cars' : 'Featured Cars'}
+        </Text>
+        {datesSearched && (
+          <Text style={{ fontSize: fontSize.xs, color: colors.muted, marginTop: 2 }}>
+            {pickupDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} — {returnDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · {filteredListings.length} result{filteredListings.length !== 1 ? 's' : ''}
+          </Text>
+        )}
+      </View>
+
       {filteredListings.length === 0 && !loading && (
-        <Text style={styles.empty}>No listings found. Try a different filter.</Text>
+        <Text style={styles.empty}>No cars available for these dates. Try different dates or filters.</Text>
       )}
 
       {filteredListings.map((listing) => (
         <TouchableOpacity
           key={listing.id}
           style={styles.card}
-          onPress={() => router.push(`/listing/${listing.id}`)}
+          onPress={() => router.push({ pathname: `/listing/${listing.id}`, params: { pickupAt: pickupDate.toISOString(), returnAt: returnDate.toISOString() } })}
           activeOpacity={0.7}
         >
           {listing.primaryImageUrl || listing.imageUrls?.[0] ? (
@@ -252,17 +397,46 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg },
   loadingText: { marginTop: spacing.md, color: colors.muted, fontSize: fontSize.md },
-  hero: { padding: spacing.lg, paddingTop: spacing.xl },
-  heroTitle: { fontSize: fontSize.xxl, fontWeight: '800', color: colors.ink, marginBottom: spacing.xs },
-  heroSubtitle: { fontSize: fontSize.md, color: colors.muted, lineHeight: 22 },
+
+  // Premium hero
+  hero: { paddingHorizontal: spacing.lg, paddingTop: 48, paddingBottom: spacing.xl, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 },
+  logoBadge: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.12)', paddingVertical: 6, paddingHorizontal: 14, borderRadius: 999, marginBottom: spacing.lg },
+  logoText: { color: '#fff', fontSize: fontSize.lg, fontWeight: '800', letterSpacing: 0.5 },
+  heroTitle: { fontSize: 34, fontWeight: '900', color: '#fff', lineHeight: 40, marginBottom: spacing.sm },
+  heroSubtitle: { fontSize: fontSize.md, color: 'rgba(255,255,255,0.75)', lineHeight: 22, marginBottom: spacing.lg },
+
+  // Date card
+  dateCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, padding: 4, marginBottom: spacing.sm, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.1, shadowRadius: 16, elevation: 5 },
+  dateField: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12, paddingHorizontal: 14 },
+  dateFieldLabel: { fontSize: fontSize.xs, fontWeight: '600', color: colors.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  dateFieldValue: { fontSize: fontSize.sm, fontWeight: '700', color: colors.ink },
+  dateDivider: { width: 1, height: 32, backgroundColor: colors.border },
+  dateSearchBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: '#8752FE', justifyContent: 'center', alignItems: 'center', marginRight: 2 },
+  dateTripLength: { fontSize: fontSize.xs, fontWeight: '600', color: 'rgba(255,255,255,0.6)', marginBottom: spacing.md, marginLeft: 4 },
+
+  // Search
+  searchContainer: { marginBottom: spacing.md },
+  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, height: 52, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.12, shadowRadius: 20, elevation: 6 },
+  searchInput: { flex: 1, height: 52, paddingHorizontal: spacing.sm, fontSize: fontSize.sm, color: colors.ink },
+  searchBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#8752FE', justifyContent: 'center', alignItems: 'center', marginRight: 6 },
+
+  // AI row
+  aiRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm },
+  aiBadgeHero: { paddingVertical: 3, paddingHorizontal: 10, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: fontSize.xs, fontWeight: '600', overflow: 'hidden' },
+
+  // Quick actions
+  quickRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
+  quickBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
+  quickBtnText: { color: '#fff', fontSize: fontSize.xs, fontWeight: '600' },
+
   error: { color: colors.error, padding: spacing.lg, fontSize: fontSize.sm },
-  filterRow: { flexDirection: 'row', paddingHorizontal: spacing.lg, gap: spacing.sm, marginBottom: spacing.md },
-  filterBtn: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: 20, borderWidth: 1, borderColor: colors.border },
+  filterRow: { flexDirection: 'row', paddingHorizontal: spacing.lg, gap: spacing.sm, marginTop: spacing.lg, marginBottom: spacing.md },
+  filterBtn: { paddingVertical: 10, paddingHorizontal: spacing.md, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },
   filterBtnActive: { backgroundColor: colors.brand, borderColor: colors.brand },
   filterText: { fontSize: fontSize.sm, fontWeight: '600', color: colors.muted },
   filterTextActive: { color: colors.white },
   empty: { textAlign: 'center', color: colors.muted, padding: spacing.xl, fontSize: fontSize.md },
-  card: { marginHorizontal: spacing.lg, marginBottom: spacing.md, borderRadius: 16, backgroundColor: colors.card, overflow: 'hidden', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
+  card: { marginHorizontal: spacing.lg, marginBottom: spacing.md, borderRadius: 16, backgroundColor: colors.card, overflow: 'hidden', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12 },
   cardImage: { width: '100%', height: 180 },
   cardBody: { padding: spacing.md },
   cardTitle: { fontSize: fontSize.lg, fontWeight: '700', color: colors.ink, marginBottom: 4 },
@@ -270,7 +444,6 @@ const styles = StyleSheet.create({
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   cardPrice: { fontSize: fontSize.lg, fontWeight: '800', color: colors.brand },
   badges: { flexDirection: 'row', gap: spacing.xs },
-  badge: { paddingVertical: 2, paddingHorizontal: 8, borderRadius: 6, backgroundColor: 'rgba(135,82,254,0.1)', color: colors.brand, fontSize: fontSize.xs, fontWeight: '700', overflow: 'hidden' },
+  badge: { paddingVertical: 3, paddingHorizontal: 10, borderRadius: 8, backgroundColor: 'rgba(135,82,254,0.08)', color: colors.brand, fontSize: fontSize.xs, fontWeight: '700', overflow: 'hidden' },
   badgeRating: { fontSize: fontSize.xs, fontWeight: '700', color: '#f5a623' },
-  aiBadge: { paddingVertical: 2, paddingHorizontal: 8, borderRadius: 6, backgroundColor: 'rgba(135,82,254,0.1)', color: colors.brand, fontSize: fontSize.xs, fontWeight: '600', overflow: 'hidden' },
 });
