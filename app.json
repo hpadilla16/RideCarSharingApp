@@ -29,6 +29,17 @@
       "expo-router",
       "@react-native-community/datetimepicker"
     ],
+    "updates": {
+      "enabled": false
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "5e652730-2e2e-4d63-aa7e-ba3891fea1a9"
+      }
+    },
     "experiments": {
       "typedRoutes": true
     }

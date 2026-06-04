@@ -5,7 +5,6 @@ import { api } from '../../lib/api';
 import { fmtDateTime } from '../../lib/format';
 import { colors, spacing, fontSize } from '../../lib/theme';
 
-const API_BASE = process.env.EXPO_PUBLIC_API_BASE || 'https://ridefleetmanager.com';
 const POLL_INTERVAL = 15000;
 
 export default function TripChatScreen() {

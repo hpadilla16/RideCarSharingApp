@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../lib/theme';
 import { registerForPushNotifications, addNotificationResponseListener } from '../lib/notifications';
 import { shouldShowOnboarding } from './onboarding';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 export default function AppLayout() {
   const scheme = useColorScheme();
@@ -25,7 +26,7 @@ export default function AppLayout() {
     return () => subscription?.remove();
   }, []);
   return (
-    <>
+    <ErrorBoundary>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <Tabs
         screenOptions={{
@@ -77,6 +78,6 @@ export default function AppLayout() {
         <Tabs.Screen name="host/earnings" options={{ href: null, title: 'Host Earnings' }} />
         <Tabs.Screen name="host/listings" options={{ href: null, title: 'Host Listings' }} />
       </Tabs>
-    </>
+    </ErrorBoundary>
   );
 }

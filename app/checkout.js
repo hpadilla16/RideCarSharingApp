@@ -5,8 +5,22 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api } from '../lib/api';
 import { fmtMoney, vehicleLabel } from '../lib/format';
 import { colors, spacing, fontSize } from '../lib/theme';
+import { PAYMENT_ALLOWED_HOSTS, PAYMENT_SUCCESS_PATH, PAYMENT_CANCEL_PATH } from '../lib/config';
 
-const API_BASE = process.env.EXPO_PUBLIC_API_BASE || 'https://ridefleetmanager.com';
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const PHONE_RE = /^\+?[\d\s().-]{7,17}$/;
+
+function isAllowedPaymentUrl(url) {
+  try {
+    const u = new URL(String(url || ''));
+    if (u.protocol !== 'https:' && u.protocol !== 'about:') return false;
+    return u.protocol === 'about:' || PAYMENT_ALLOWED_HOSTS.some(
+      (host) => u.hostname === host || u.hostname.endsWith(`.${host}`)
+    );
+  } catch {
+    return false;
+  }
+}
 
 export default function CheckoutScreen() {
   const { listingId, pickupAt, returnAt } = useLocalSearchParams();
@@ -37,6 +51,20 @@ export default function CheckoutScreen() {
   }, [listingId]);
 
   const isInfoComplete = customer.firstName.trim() && customer.lastName.trim() && customer.email.trim() && customer.phone.trim();
+
+  function validateInfo() {
+    if (!isInfoComplete) return 'Please fill all fields';
+    if (!EMAIL_RE.test(customer.email.trim())) return 'Please enter a valid email address';
+    if (!PHONE_RE.test(customer.phone.trim())) return 'Please enter a valid phone number';
+    return '';
+  }
+
+  function handleContinue() {
+    const msg = validateInfo();
+    if (msg) { setError(msg); return; }
+    setError('');
+    setStep(2);
+  }
   const isProtectionSelected = protectionTier !== 'BASIC' || (declinedProtection && ownInsuranceConfirmed);
 
   async function handleSubmit() {
@@ -44,7 +72,8 @@ export default function CheckoutScreen() {
       setError('Please select a Trip Protection tier or confirm you have your own insurance.');
       return;
     }
-    if (!isInfoComplete) { setError('Please fill all fields'); return; }
+    const infoError = validateInfo();
+    if (infoError) { setError(infoError); return; }
     setSubmitting(true);
     setError('');
     try {
@@ -100,12 +129,24 @@ export default function CheckoutScreen() {
               <Text style={{ color: colors.muted, marginTop: spacing.md }}>Loading payment portal...</Text>
             </View>
           )}
+          onShouldStartLoadWithRequest={(request) => {
+            // Only allow navigation to our API host and known payment gateways.
+            if (isAllowedPaymentUrl(request.url)) return true;
+            console.warn('Blocked payment WebView navigation to:', request.url);
+            return false;
+          }}
           onNavigationStateChange={(navState) => {
-            // Detect when payment completes (URL contains success/confirmed/complete)
-            const url = String(navState.url || '').toLowerCase();
-            if (url.includes('success') || url.includes('confirmed') || url.includes('complete') || url.includes('thank')) {
-              setStep(3);
-            }
+            // Backend redirects to its own return pages after payment:
+            // /api/public/booking/trips/:tripCode/payment-return | payment-cancel
+            try {
+              const path = new URL(String(navState.url || '')).pathname;
+              if (path.endsWith(PAYMENT_SUCCESS_PATH)) {
+                setStep(3);
+              } else if (path.endsWith(PAYMENT_CANCEL_PATH)) {
+                setError('Payment was cancelled. You can try again.');
+                setStep(2);
+              }
+            } catch {}
           }}
           onError={() => {
             setError('Payment page failed to load. Please try again.');
@@ -158,7 +199,7 @@ export default function CheckoutScreen() {
             <TextInput style={styles.input} placeholder="Email" placeholderTextColor={colors.muted} value={customer.email} onChangeText={(v) => setCustomer((c) => ({ ...c, email: v }))} keyboardType="email-address" autoCapitalize="none" />
             <TextInput style={styles.input} placeholder="Phone" placeholderTextColor={colors.muted} value={customer.phone} onChangeText={(v) => setCustomer((c) => ({ ...c, phone: v }))} keyboardType="phone-pad" />
 
-            <TouchableOpacity style={[styles.btn, !isInfoComplete && styles.btnDisabled]} onPress={() => isInfoComplete && setStep(2)} disabled={!isInfoComplete}>
+            <TouchableOpacity style={[styles.btn, !isInfoComplete && styles.btnDisabled]} onPress={handleContinue} disabled={!isInfoComplete}>
               <Text style={styles.btnText}>Continue</Text>
             </TouchableOpacity>
           </>
