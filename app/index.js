@@ -52,18 +52,22 @@ export default function ExploreScreen() {
     })();
   }, []);
 
+  async function loadBootstrap() {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await api('/api/public/booking/bootstrap');
+      setBootstrap(data);
+      setListings(data?.featuredCarSharingListings || []);
+    } catch (err) {
+      setError(err?.message || 'Unable to load listings');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   useEffect(() => {
-    (async () => {
-      try {
-        const data = await api('/api/public/booking/bootstrap');
-        setBootstrap(data);
-        setListings(data?.featuredCarSharingListings || []);
-      } catch (err) {
-        setError(err?.message || 'Unable to load listings');
-      } finally {
-        setLoading(false);
-      }
-    })();
+    loadBootstrap();
   }, []);
 
   async function handleDateSearch() {
@@ -155,8 +159,70 @@ export default function ExploreScreen() {
     );
   }
 
+  // Bootstrap failed entirely (offline / server down) — show retry.
+  if (!bootstrap && error) {
+    return (
+      <View style={styles.center}>
+        <Ionicons name="cloud-offline-outline" size={48} color={colors.muted} />
+        <Text style={[styles.loadingText, { marginBottom: spacing.lg }]}>
+          {error.includes('Network') || error.includes('fetch') ? "Can't connect. Check your internet connection." : error}
+        </Text>
+        <TouchableOpacity style={styles.retryBtn} onPress={loadBootstrap}>
+          <Text style={styles.retryBtnText}>Try Again</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const renderListing = ({ item: listing }) => (
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => router.push({ pathname: `/listing/${listing.id}`, params: { pickupAt: pickupDate.toISOString(), returnAt: returnDate.toISOString() } })}
+      activeOpacity={0.7}
+    >
+      {listing.primaryImageUrl || listing.imageUrls?.[0] ? (
+        <Image
+          source={{ uri: listing.primaryImageUrl || listing.imageUrls[0] }}
+          style={styles.cardImage}
+          resizeMode="cover"
+        />
+      ) : (
+        <View style={[styles.cardImage, { backgroundColor: colors.border, justifyContent: 'center', alignItems: 'center' }]}>
+          <Text style={{ color: colors.muted }}>No Photo</Text>
+        </View>
+      )}
+      <View style={styles.cardBody}>
+        <Text style={styles.cardTitle}>{listing.title || vehicleLabel(listing)}</Text>
+        <Text style={styles.cardMeta}>
+          {listing.host?.displayName ? `Hosted by ${listing.host.displayName}` : ''}
+          {listing.location ? ` · ${locationLabel(listing.location)}` : ''}
+        </Text>
+        <View style={styles.cardFooter}>
+          <Text style={styles.cardPrice}>{fmtMoney(listing.baseDailyRate)}/day</Text>
+          <View style={styles.badges}>
+            {listing.instantBook && <Text style={styles.badge}>Instant Book</Text>}
+            {listing.host?.averageRating > 0 && (
+              <Text style={styles.badgeRating}>★ {Number(listing.host.averageRating).toFixed(1)}</Text>
+            )}
+          </View>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
+    <FlatList
+      style={styles.container}
+      contentContainerStyle={{ paddingBottom: 40 }}
+      data={filteredListings}
+      keyExtractor={(l) => String(l.id)}
+      renderItem={renderListing}
+      initialNumToRender={6}
+      maxToRenderPerBatch={8}
+      windowSize={7}
+      ListEmptyComponent={<Text style={styles.empty}>No cars available for these dates. Try different dates or filters.</Text>}
+      ListHeaderComponent={
+        <>
       {/* Hero */}
       <LinearGradient
         colors={['#1a1340', '#2d1f6e', '#8752FE']}
@@ -349,54 +415,18 @@ export default function ExploreScreen() {
         )}
       </View>
 
-      {filteredListings.length === 0 && !loading && (
-        <Text style={styles.empty}>No cars available for these dates. Try different dates or filters.</Text>
-      )}
-
-      {filteredListings.map((listing) => (
-        <TouchableOpacity
-          key={listing.id}
-          style={styles.card}
-          onPress={() => router.push({ pathname: `/listing/${listing.id}`, params: { pickupAt: pickupDate.toISOString(), returnAt: returnDate.toISOString() } })}
-          activeOpacity={0.7}
-        >
-          {listing.primaryImageUrl || listing.imageUrls?.[0] ? (
-            <Image
-              source={{ uri: listing.primaryImageUrl || listing.imageUrls[0] }}
-              style={styles.cardImage}
-              resizeMode="cover"
-            />
-          ) : (
-            <View style={[styles.cardImage, { backgroundColor: colors.border, justifyContent: 'center', alignItems: 'center' }]}>
-              <Text style={{ color: colors.muted }}>No Photo</Text>
-            </View>
-          )}
-          <View style={styles.cardBody}>
-            <Text style={styles.cardTitle}>{listing.title || vehicleLabel(listing)}</Text>
-            <Text style={styles.cardMeta}>
-              {listing.host?.displayName ? `Hosted by ${listing.host.displayName}` : ''}
-              {listing.location ? ` · ${locationLabel(listing.location)}` : ''}
-            </Text>
-            <View style={styles.cardFooter}>
-              <Text style={styles.cardPrice}>{fmtMoney(listing.baseDailyRate)}/day</Text>
-              <View style={styles.badges}>
-                {listing.instantBook && <Text style={styles.badge}>Instant Book</Text>}
-                {listing.host?.averageRating > 0 && (
-                  <Text style={styles.badgeRating}>★ {Number(listing.host.averageRating).toFixed(1)}</Text>
-                )}
-              </View>
-            </View>
-          </View>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
+        </>
+      }
+    />
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg },
-  loadingText: { marginTop: spacing.md, color: colors.muted, fontSize: fontSize.md },
+  loadingText: { marginTop: spacing.md, color: colors.muted, fontSize: fontSize.md, textAlign: 'center', paddingHorizontal: spacing.xl },
+  retryBtn: { height: 48, paddingHorizontal: 32, borderRadius: 14, backgroundColor: colors.brand, justifyContent: 'center', alignItems: 'center' },
+  retryBtnText: { color: colors.white, fontWeight: '800', fontSize: fontSize.md },
 
   // Premium hero
   hero: { paddingHorizontal: spacing.lg, paddingTop: 48, paddingBottom: spacing.xl, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 },

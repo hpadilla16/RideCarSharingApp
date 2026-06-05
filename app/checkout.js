@@ -6,9 +6,65 @@ import { api } from '../lib/api';
 import { fmtMoney, vehicleLabel } from '../lib/format';
 import { colors, spacing, fontSize } from '../lib/theme';
 import { PAYMENT_ALLOWED_HOSTS, PAYMENT_SUCCESS_PATH, PAYMENT_CANCEL_PATH } from '../lib/config';
+import { logWarn } from '../lib/logger';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PHONE_RE = /^\+?[\d\s().-]{7,17}$/;
+
+// Fallbacks if /policies fetch fails — keep in sync with backend
+// car-sharing-commission.js / car-sharing-policies.js.
+const FALLBACK_TIERS = [
+  { id: 'BASIC', label: 'Basic', price: 'Free', desc: 'No deductible reimbursement — you pay for all damages and file with host\'s insurer directly', deductible: 'N/A', limit: 'N/A' },
+  { id: 'STANDARD', label: 'Standard', price: '$12/day', desc: 'Recommended — Ride reimburses the host\'s insurance deductible so you don\'t pay out of pocket', deductible: 'Up to $1,000', limit: 'Host deductible', recommended: true },
+  { id: 'PREMIUM', label: 'Premium', price: '$22/day', desc: 'Ride reimburses host\'s insurance deductible + roadside assistance included', deductible: 'Up to $2,500', limit: 'Host deductible + roadside' },
+];
+
+const ADDON_EMOJI = { TIRE_PROTECTION: '🛞', GLASS_PROTECTION: '🪟', ROADSIDE_ASSISTANCE: '🚨', TOLL_PASS: '🛣' };
+
+const FALLBACK_ADDONS = [
+  { id: 'TIRE_PROTECTION', label: '🛞 Tire Protection', price: '$5/day', desc: 'Blowouts, flat tires, rim damage from road hazards' },
+  { id: 'GLASS_PROTECTION', label: '🪟 Glass Protection', price: '$4/day', desc: 'Windshield chips/cracks, window and mirror glass' },
+  { id: 'ROADSIDE_ASSISTANCE', label: '🚨 Roadside Assistance', price: '$6/day', desc: 'Towing, jump start, flat change, lockout, fuel delivery' },
+  { id: 'TOLL_PASS', label: '🛣 Toll Pass', price: '$3.50/day', desc: 'Unlimited toll usage — AutoExpreso, SunPass, E-ZPass, TxTag' },
+];
+
+const FALLBACK_EXCLUSIONS = 'Tires, glass/windshield, wear and tear, mechanical breakdown, interior damage from normal use, personal property, liability to others, unauthorized drivers, off-road or illegal use.';
+
+function fmtPerDay(pricePerDay) {
+  const n = Number(pricePerDay || 0);
+  if (n <= 0) return 'Free';
+  return `$${Number.isInteger(n) ? n : n.toFixed(2)}/day`;
+}
+
+function tiersFromApi(apiTiers) {
+  if (!apiTiers || typeof apiTiers !== 'object') return null;
+  const list = ['BASIC', 'STANDARD', 'PREMIUM']
+    .map((id) => apiTiers[id])
+    .filter(Boolean)
+    .map((t) => ({
+      id: t.id,
+      label: t.label || t.id,
+      price: fmtPerDay(t.pricePerDay),
+      desc: t.description || '',
+      deductible: Number(t.deductibleReimbursementMax) > 0 ? `Up to $${Number(t.deductibleReimbursementMax).toLocaleString()}` : 'N/A',
+      limit: Number(t.deductibleReimbursementMax) > 0 ? `Host deductible${t.roadsideAssistance ? ' + roadside' : ''}` : 'N/A',
+      recommended: t.id === 'STANDARD',
+    }));
+  return list.length >= 2 ? list : null;
+}
+
+function addonsFromApi(apiAddons) {
+  if (!apiAddons || typeof apiAddons !== 'object') return null;
+  const list = Object.values(apiAddons)
+    .filter((a) => a && a.id && a.hostOffered !== false)
+    .map((a) => ({
+      id: a.id,
+      label: `${ADDON_EMOJI[a.id] || '✚'} ${a.label || a.id}`,
+      price: fmtPerDay(a.pricePerDay),
+      desc: Array.isArray(a.covers) && a.covers.length ? a.covers.join(', ') : (a.description || ''),
+    }));
+  return list.length ? list : null;
+}
 
 function isAllowedPaymentUrl(url) {
   try {
@@ -35,6 +91,9 @@ export default function CheckoutScreen() {
   const [protectionTier, setProtectionTier] = useState('STANDARD');
   const [declinedProtection, setDeclinedProtection] = useState(false);
   const [ownInsuranceConfirmed, setOwnInsuranceConfirmed] = useState(false);
+  const [tiers, setTiers] = useState(FALLBACK_TIERS);
+  const [addons, setAddons] = useState(FALLBACK_ADDONS);
+  const [exclusionsText, setExclusionsText] = useState(FALLBACK_EXCLUSIONS);
 
   useEffect(() => {
     (async () => {
@@ -46,6 +105,22 @@ export default function CheckoutScreen() {
         setError(err?.message || 'Unable to load listing');
       } finally {
         setLoading(false);
+      }
+    })();
+    // Protection tiers / add-ons / exclusions come from the backend so
+    // pricing changes don't require an app release. Fallbacks above.
+    (async () => {
+      try {
+        const data = await api('/api/public/booking/policies');
+        const apiTiers = tiersFromApi(data?.protectionTiers);
+        if (apiTiers) setTiers(apiTiers);
+        const apiAddons = addonsFromApi(data?.policies?.addons);
+        if (apiAddons) setAddons(apiAddons);
+        if (Array.isArray(data?.protectionExclusions) && data.protectionExclusions.length) {
+          setExclusionsText(data.protectionExclusions.join(' · '));
+        }
+      } catch (err) {
+        logWarn('Failed to load policies, using fallback copy: ' + (err?.message || err));
       }
     })();
   }, [listingId]);
@@ -218,11 +293,7 @@ export default function CheckoutScreen() {
             <Text style={styles.sectionTitle}>Trip Protection</Text>
             <Text style={{ fontSize: fontSize.xs, color: colors.muted, marginBottom: spacing.sm }}>Trip Protection is NOT insurance. It is a limited program where Ride reimburses the host's insurance deductible only. Your own auto insurance and the host's auto insurance are the primary coverage. Ride does not cover repair costs, liability claims, or property damage directly.</Text>
 
-            {[
-              { id: 'BASIC', label: 'Basic', price: 'Free', desc: 'No deductible reimbursement — you pay for all damages and file with host\'s insurer directly', deductible: 'N/A', limit: 'N/A' },
-              { id: 'STANDARD', label: 'Standard', price: '$12/day', desc: 'Recommended — Ride reimburses the host\'s insurance deductible so you don\'t pay out of pocket', deductible: 'Up to $1,000', limit: 'Host deductible', recommended: true },
-              { id: 'PREMIUM', label: 'Premium', price: '$22/day', desc: 'Ride reimburses host\'s insurance deductible + roadside assistance included', deductible: 'Up to $2,500', limit: 'Host deductible + roadside' },
-            ].map((tier) => (
+            {tiers.map((tier) => (
               <TouchableOpacity
                 key={tier.id}
                 style={[styles.tierCard, protectionTier === tier.id && styles.tierCardActive]}
@@ -275,19 +346,14 @@ export default function CheckoutScreen() {
             {/* Exclusions */}
             <View style={{ padding: spacing.md, backgroundColor: 'rgba(255,194,88,0.06)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,194,88,0.15)' }}>
               <Text style={{ fontWeight: '700', color: colors.warning, fontSize: fontSize.sm, marginBottom: spacing.xs }}>⚠️ NOT covered by any protection tier:</Text>
-              <Text style={{ fontSize: fontSize.xs, color: colors.muted, lineHeight: 18 }}>Tires, glass/windshield, wear and tear, mechanical breakdown, interior damage from normal use, personal property, liability to others, unauthorized drivers, off-road or illegal use.</Text>
+              <Text style={{ fontSize: fontSize.xs, color: colors.muted, lineHeight: 18 }}>{exclusionsText}</Text>
             </View>
 
             {/* Optional Add-ons */}
             <Text style={styles.sectionTitle}>Optional Add-ons</Text>
             <Text style={{ fontSize: fontSize.xs, color: colors.muted, marginBottom: spacing.sm }}>Available add-ons depend on what the host offers for this vehicle.</Text>
 
-            {[
-              { id: 'TIRE', label: '🛞 Tire Protection', price: '$5/day', desc: 'Blowouts, flat tires, rim damage from road hazards' },
-              { id: 'GLASS', label: '🪟 Glass Protection', price: '$4/day', desc: 'Windshield chips/cracks, window and mirror glass' },
-              { id: 'ROADSIDE', label: '🚨 Roadside Assistance', price: '$6/day', desc: 'Towing, jump start, flat change, lockout, fuel delivery' },
-              { id: 'TOLLPASS', label: '🛣 Toll Pass', price: '$3.50/day', desc: 'Unlimited toll usage — AutoExpreso, SunPass, E-ZPass, TxTag' },
-            ].map((addon) => (
+            {addons.map((addon) => (
               <View key={addon.id} style={{ flexDirection: 'row', alignItems: 'center', padding: spacing.sm, marginBottom: spacing.xs, backgroundColor: colors.card, borderRadius: 10, borderWidth: 1, borderColor: colors.border }}>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontWeight: '600', color: colors.ink, fontSize: fontSize.sm }}>{addon.label}</Text>
