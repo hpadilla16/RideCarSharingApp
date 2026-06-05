@@ -1,6 +1,7 @@
 import { Component } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { logError } from '../lib/logger';
+import i18n from '../lib/i18n';
 
 export default class ErrorBoundary extends Component {
   state = { error: null };
@@ -18,10 +19,10 @@ export default class ErrorBoundary extends Component {
     return (
       <View style={styles.center}>
         <Text style={styles.emoji}>😕</Text>
-        <Text style={styles.title}>Something went wrong</Text>
-        <Text style={styles.subtitle}>An unexpected error occurred. Please try again.</Text>
+        <Text style={styles.title}>{i18n.t('common.error')}</Text>
+        <Text style={styles.subtitle}>{i18n.t('errorBoundary.subtitle')}</Text>
         <TouchableOpacity style={styles.btn} onPress={() => this.setState({ error: null })} accessibilityRole="button">
-          <Text style={styles.btnText}>Try Again</Text>
+          <Text style={styles.btnText}>{i18n.t('common.tryAgain')}</Text>
         </TouchableOpacity>
       </View>
     );

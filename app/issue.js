@@ -3,17 +3,14 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Keyboa
 import { useRouter } from 'expo-router';
 import { api } from '../lib/api';
 import { colors, spacing, fontSize } from '../lib/theme';
+import { useTranslation } from 'react-i18next';
 
-const ISSUE_TYPES = [
-  { id: 'VEHICLE_DAMAGE', label: 'Vehicle Damage' },
-  { id: 'BILLING', label: 'Billing Issue' },
-  { id: 'SERVICE', label: 'Service Issue' },
-  { id: 'SAFETY', label: 'Safety Concern' },
-  { id: 'OTHER', label: 'Other' },
-];
+const ISSUE_TYPE_IDS = ['VEHICLE_DAMAGE', 'BILLING', 'SERVICE', 'SAFETY', 'OTHER'];
 
 export default function IssueScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
+  const ISSUE_TYPES = ISSUE_TYPE_IDS.map((id) => ({ id, label: t(`issue.type_${id}`) }));
   const [form, setForm] = useState({ reference: '', email: '', type: 'SERVICE', description: '' });
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
@@ -21,7 +18,7 @@ export default function IssueScreen() {
 
   async function handleSubmit() {
     if (!form.reference.trim() || !form.email.trim() || !form.description.trim()) {
-      setError('Please fill all required fields');
+      setError(t('issue.fillRequired'));
       return;
     }
     setSubmitting(true);
@@ -33,7 +30,7 @@ export default function IssueScreen() {
       });
       setResult(data);
     } catch (err) {
-      setError(err?.message || 'Unable to submit issue');
+      setError(err?.message || t('issue.unableToSubmit'));
     } finally {
       setSubmitting(false);
     }
@@ -43,10 +40,10 @@ export default function IssueScreen() {
     return (
       <View style={styles.center}>
         <Text style={{ fontSize: 48, marginBottom: spacing.md }}>🎫</Text>
-        <Text style={styles.title}>Issue Reported</Text>
-        <Text style={styles.subtitle}>Our support team will review your report and follow up via email.</Text>
+        <Text style={styles.title}>{t('issue.reportedTitle')}</Text>
+        <Text style={styles.subtitle}>{t('issue.reportedBody')}</Text>
         <TouchableOpacity style={styles.btn} onPress={() => router.back()} accessibilityRole="button">
-          <Text style={styles.btnText}>Done</Text>
+          <Text style={styles.btnText}>{t('common.done')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -55,18 +52,18 @@ export default function IssueScreen() {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.lg, paddingBottom: 60 }}>
-        <Text style={styles.title}>Report an Issue</Text>
-        <Text style={styles.subtitle}>Let us know about a problem with your trip.</Text>
+        <Text style={styles.title}>{t('issue.title')}</Text>
+        <Text style={styles.subtitle}>{t('issue.subtitle')}</Text>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        <Text style={styles.label}>Booking reference</Text>
-        <TextInput style={styles.input} placeholder="Trip code or reservation number" placeholderTextColor={colors.muted} value={form.reference} onChangeText={(v) => setForm((f) => ({ ...f, reference: v }))} accessibilityLabel="Trip code or reservation number" />
+        <Text style={styles.label}>{t('issue.bookingReference')}</Text>
+        <TextInput style={styles.input} placeholder={t('issue.referencePlaceholder')} placeholderTextColor={colors.muted} value={form.reference} onChangeText={(v) => setForm((f) => ({ ...f, reference: v }))} accessibilityLabel={t('issue.referencePlaceholder')} />
 
-        <Text style={styles.label}>Your email</Text>
-        <TextInput style={styles.input} placeholder="you@example.com" placeholderTextColor={colors.muted} value={form.email} onChangeText={(v) => setForm((f) => ({ ...f, email: v }))} keyboardType="email-address" autoCapitalize="none" accessibilityLabel="Your email" />
+        <Text style={styles.label}>{t('issue.yourEmail')}</Text>
+        <TextInput style={styles.input} placeholder="you@example.com" placeholderTextColor={colors.muted} value={form.email} onChangeText={(v) => setForm((f) => ({ ...f, email: v }))} keyboardType="email-address" autoCapitalize="none" accessibilityLabel={t('issue.yourEmail')} />
 
-        <Text style={styles.label}>Issue type</Text>
+        <Text style={styles.label}>{t('issue.issueType')}</Text>
         <View style={styles.typeRow}>
           {ISSUE_TYPES.map((t) => (
             <TouchableOpacity
@@ -81,20 +78,20 @@ export default function IssueScreen() {
           ))}
         </View>
 
-        <Text style={styles.label}>Description</Text>
+        <Text style={styles.label}>{t('issue.description')}</Text>
         <TextInput
           style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
-          placeholder="Describe what happened..."
+          placeholder={t('issue.descriptionPlaceholder')}
           placeholderTextColor={colors.muted}
           value={form.description}
           onChangeText={(v) => setForm((f) => ({ ...f, description: v }))}
           multiline
           numberOfLines={4}
-          accessibilityLabel="Describe what happened"
+          accessibilityLabel={t('issue.descriptionA11y')}
         />
 
         <TouchableOpacity style={styles.btn} onPress={handleSubmit} disabled={submitting} accessibilityRole="button">
-          <Text style={styles.btnText}>{submitting ? 'Submitting...' : 'Submit Report'}</Text>
+          <Text style={styles.btnText}>{submitting ? t('issue.submitting') : t('issue.submitReport')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>

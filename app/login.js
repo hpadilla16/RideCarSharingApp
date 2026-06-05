@@ -3,8 +3,10 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingVi
 import { useRouter } from 'expo-router';
 import { api, storeGuestSession } from '../lib/api';
 import { colors, spacing, fontSize } from '../lib/theme';
+import { useTranslation } from 'react-i18next';
 
 export default function LoginScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -12,7 +14,7 @@ export default function LoginScreen() {
   const [error, setError] = useState('');
 
   async function requestLink() {
-    if (!email.trim()) { setError('Please enter your email'); return; }
+    if (!email.trim()) { setError(t('login.enterEmail')); return; }
     setLoading(true);
     setError('');
     try {
@@ -22,7 +24,7 @@ export default function LoginScreen() {
       });
       setSent(true);
     } catch (err) {
-      setError(err?.message || 'Unable to send sign-in link');
+      setError(err?.message || t('login.unableToSend'));
     } finally {
       setLoading(false);
     }
@@ -32,12 +34,12 @@ export default function LoginScreen() {
     return (
       <View style={styles.center}>
         <Text style={{ fontSize: 48, marginBottom: spacing.md }}>📧</Text>
-        <Text style={styles.title}>Check your email</Text>
+        <Text style={styles.title}>{t('login.checkEmailTitle')}</Text>
         <Text style={styles.subtitle}>
-          We sent a sign-in link to {email}. Click the link to access your trips. It expires in 15 minutes.
+          {t('login.checkEmailBody', { email })}
         </Text>
         <TouchableOpacity style={styles.ghostBtn} onPress={() => { setSent(false); setEmail(''); }} accessibilityRole="button">
-          <Text style={styles.ghostBtnText}>Use a different email</Text>
+          <Text style={styles.ghostBtnText}>{t('login.useDifferentEmail')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -49,8 +51,8 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.center}>
-        <Text style={styles.title}>Guest Sign In</Text>
-        <Text style={styles.subtitle}>Enter your email to receive a secure sign-in link. No password needed.</Text>
+        <Text style={styles.title}>{t('login.title')}</Text>
+        <Text style={styles.subtitle}>{t('login.subtitle')}</Text>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -63,15 +65,15 @@ export default function LoginScreen() {
           keyboardType="email-address"
           autoCapitalize="none"
           autoComplete="email"
-          accessibilityLabel="Email address"
+          accessibilityLabel={t('login.emailA11y')}
         />
 
         <TouchableOpacity style={styles.btn} onPress={requestLink} disabled={loading} activeOpacity={0.8} accessibilityRole="button">
-          <Text style={styles.btnText}>{loading ? 'Sending...' : 'Send Sign-in Link'}</Text>
+          <Text style={styles.btnText}>{loading ? t('login.sending') : t('login.sendLink')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.ghostBtn} onPress={() => router.back()} accessibilityRole="button">
-          <Text style={styles.ghostBtnText}>Back to Explore</Text>
+          <Text style={styles.ghostBtnText}>{t('login.backToExplore')}</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>

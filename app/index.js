@@ -9,8 +9,10 @@ import { api } from '../lib/api';
 import { fmtMoney, vehicleLabel, locationLabel } from '../lib/format';
 import { getFavorites } from '../lib/favorites';
 import { colors, spacing, fontSize } from '../lib/theme';
+import { useTranslation } from 'react-i18next';
 
 export default function ExploreScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [bootstrap, setBootstrap] = useState(null);
   const [listings, setListings] = useState([]);
@@ -60,7 +62,7 @@ export default function ExploreScreen() {
       setBootstrap(data);
       setListings(data?.featuredCarSharingListings || []);
     } catch (err) {
-      setError(err?.message || 'Unable to load listings');
+      setError(err?.message || t('explore.unableToLoad'));
     } finally {
       setLoading(false);
     }
@@ -99,7 +101,7 @@ export default function ExploreScreen() {
     } catch (err) {
       // Fallback to featured listings if search fails
       setListings(bootstrap?.featuredCarSharingListings || []);
-      setError('Search unavailable — showing featured cars');
+      setError(t('explore.searchUnavailable'));
       setDatesSearched(true);
     } finally {
       setSearching(false);
@@ -154,7 +156,7 @@ export default function ExploreScreen() {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={colors.brand} />
-        <Text style={styles.loadingText}>Loading car sharing...</Text>
+        <Text style={styles.loadingText}>{t('explore.loadingCarSharing')}</Text>
       </View>
     );
   }
@@ -165,10 +167,10 @@ export default function ExploreScreen() {
       <View style={styles.center}>
         <Ionicons name="cloud-offline-outline" size={48} color={colors.muted} />
         <Text style={[styles.loadingText, { marginBottom: spacing.lg }]}>
-          {error.includes('Network') || error.includes('fetch') ? "Can't connect. Check your internet connection." : error}
+          {error.includes('Network') || error.includes('fetch') ? t('explore.cantConnect') : error}
         </Text>
         <TouchableOpacity style={styles.retryBtn} onPress={loadBootstrap} accessibilityRole="button">
-          <Text style={styles.retryBtnText}>Try Again</Text>
+          <Text style={styles.retryBtnText}>{t('common.tryAgain')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -180,30 +182,30 @@ export default function ExploreScreen() {
       onPress={() => router.push({ pathname: `/listing/${listing.id}`, params: { pickupAt: pickupDate.toISOString(), returnAt: returnDate.toISOString() } })}
       activeOpacity={0.7}
       accessibilityRole="button"
-      accessibilityLabel={`View listing: ${listing.title || vehicleLabel(listing)}`}
+      accessibilityLabel={t('explore.viewListing', { title: listing.title || vehicleLabel(listing) })}
     >
       {listing.primaryImageUrl || listing.imageUrls?.[0] ? (
         <Image
           source={{ uri: listing.primaryImageUrl || listing.imageUrls[0] }}
           style={styles.cardImage}
           resizeMode="cover"
-          accessibilityLabel={`Photo of ${listing.title || vehicleLabel(listing)}`}
+          accessibilityLabel={t('explore.photoOf', { title: listing.title || vehicleLabel(listing) })}
         />
       ) : (
         <View style={[styles.cardImage, { backgroundColor: colors.border, justifyContent: 'center', alignItems: 'center' }]}>
-          <Text style={{ color: colors.muted }}>No Photo</Text>
+          <Text style={{ color: colors.muted }}>{t('explore.noPhoto')}</Text>
         </View>
       )}
       <View style={styles.cardBody}>
         <Text style={styles.cardTitle}>{listing.title || vehicleLabel(listing)}</Text>
         <Text style={styles.cardMeta}>
-          {listing.host?.displayName ? `Hosted by ${listing.host.displayName}` : ''}
+          {listing.host?.displayName ? t('explore.hostedBy', { name: listing.host.displayName }) : ''}
           {listing.location ? ` · ${locationLabel(listing.location)}` : ''}
         </Text>
         <View style={styles.cardFooter}>
-          <Text style={styles.cardPrice}>{fmtMoney(listing.baseDailyRate)}/day</Text>
+          <Text style={styles.cardPrice}>{fmtMoney(listing.baseDailyRate)}{t('common.perDay')}</Text>
           <View style={styles.badges}>
-            {listing.instantBook && <Text style={styles.badge}>Instant Book</Text>}
+            {listing.instantBook && <Text style={styles.badge}>{t('explore.instantBook')}</Text>}
             {listing.host?.averageRating > 0 && (
               <Text style={styles.badgeRating}>★ {Number(listing.host.averageRating).toFixed(1)}</Text>
             )}
@@ -223,7 +225,7 @@ export default function ExploreScreen() {
       initialNumToRender={6}
       maxToRenderPerBatch={8}
       windowSize={7}
-      ListEmptyComponent={<Text style={styles.empty}>No cars available for these dates. Try different dates or filters.</Text>}
+      ListEmptyComponent={<Text style={styles.empty}>{t('explore.noCarsAvailable')}</Text>}
       ListHeaderComponent={
         <>
       {/* Hero */}
@@ -239,33 +241,33 @@ export default function ExploreScreen() {
           <Text style={styles.logoText}>Ride</Text>
         </View>
 
-        <Text style={styles.heroTitle}>Find your{'\n'}perfect ride</Text>
+        <Text style={styles.heroTitle}>{t('explore.heroTitle')}</Text>
         <Text style={styles.heroSubtitle}>
-          Airport-ready rentals, curated car sharing, and trip protection on every booking.
+          {t('explore.heroSubtitle')}
         </Text>
 
         {/* Date pickers */}
         <View style={styles.dateCard}>
-          <TouchableOpacity style={styles.dateField} onPress={() => setShowPickupPicker(true)} accessibilityRole="button" accessibilityLabel={`Pickup date, ${pickupDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' })}`}>
+          <TouchableOpacity style={styles.dateField} onPress={() => setShowPickupPicker(true)} accessibilityRole="button" accessibilityLabel={t('explore.pickupDateA11y', { date: pickupDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' }) })}>
             <Ionicons name="calendar-outline" size={16} color="#8752FE" />
             <View>
-              <Text style={styles.dateFieldLabel}>Pickup</Text>
+              <Text style={styles.dateFieldLabel}>{t('explore.pickup')}</Text>
               <Text style={styles.dateFieldValue}>
                 {pickupDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' })}
               </Text>
             </View>
           </TouchableOpacity>
           <View style={styles.dateDivider} />
-          <TouchableOpacity style={styles.dateField} onPress={() => setShowReturnPicker(true)} accessibilityRole="button" accessibilityLabel={`Return date, ${returnDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' })}`}>
+          <TouchableOpacity style={styles.dateField} onPress={() => setShowReturnPicker(true)} accessibilityRole="button" accessibilityLabel={t('explore.returnDateA11y', { date: returnDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' }) })}>
             <Ionicons name="calendar-outline" size={16} color="#8752FE" />
             <View>
-              <Text style={styles.dateFieldLabel}>Return</Text>
+              <Text style={styles.dateFieldLabel}>{t('explore.return')}</Text>
               <Text style={styles.dateFieldValue}>
                 {returnDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' })}
               </Text>
             </View>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.dateSearchBtn} onPress={handleDateSearch} accessibilityRole="button" accessibilityLabel="Search cars for selected dates">
+          <TouchableOpacity style={styles.dateSearchBtn} onPress={handleDateSearch} accessibilityRole="button" accessibilityLabel={t('explore.searchDatesA11y')}>
             {searching ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
@@ -303,7 +305,7 @@ export default function ExploreScreen() {
           />
         )}
         <Text style={styles.dateTripLength}>
-          {Math.round((returnDate - pickupDate) / 86400000)} day trip
+          {t('explore.dayTrip', { count: Math.round((returnDate - pickupDate) / 86400000) })}
         </Text>
 
         {/* Search bar */}
@@ -312,15 +314,15 @@ export default function ExploreScreen() {
             <Ionicons name="search" size={18} color={colors.muted} style={{ marginLeft: spacing.md }} />
             <TextInput
               style={styles.searchInput}
-              placeholder='Try "SUV near airport this weekend"'
+              placeholder={t('explore.searchPlaceholder')}
               placeholderTextColor="rgba(107,122,154,0.7)"
               value={searchQuery}
               onChangeText={setSearchQuery}
               onSubmitEditing={handleAiSearch}
               returnKeyType="search"
-              accessibilityLabel='Try "SUV near airport this weekend"'
+              accessibilityLabel={t('explore.searchPlaceholder')}
             />
-            <TouchableOpacity style={styles.searchBtn} onPress={handleAiSearch} accessibilityRole="button" accessibilityLabel="Search">
+            <TouchableOpacity style={styles.searchBtn} onPress={handleAiSearch} accessibilityRole="button" accessibilityLabel={t('explore.search')}>
               {searching ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
@@ -337,9 +339,9 @@ export default function ExploreScreen() {
             {aiParsed.location && <Text style={styles.aiBadgeHero}>{aiParsed.location}</Text>}
             {aiParsed.pickupDate && <Text style={styles.aiBadgeHero}>{aiParsed.pickupDate}</Text>}
             {aiParsed.maxPrice && <Text style={styles.aiBadgeHero}>{'<'}${aiParsed.maxPrice}/day</Text>}
-            {aiParsed.instantBook && <Text style={styles.aiBadgeHero}>Instant</Text>}
-            <TouchableOpacity onPress={() => { setAiParsed(null); setSearchQuery(''); }} accessibilityRole="button" accessibilityLabel="Clear search filters">
-              <Text style={{ fontSize: fontSize.xs, color: 'rgba(255,255,255,0.6)', fontWeight: '600' }}>Clear</Text>
+            {aiParsed.instantBook && <Text style={styles.aiBadgeHero}>{t('explore.instant')}</Text>}
+            <TouchableOpacity onPress={() => { setAiParsed(null); setSearchQuery(''); }} accessibilityRole="button" accessibilityLabel={t('explore.clearFiltersA11y')}>
+              <Text style={{ fontSize: fontSize.xs, color: 'rgba(255,255,255,0.6)', fontWeight: '600' }}>{t('explore.clear')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -348,15 +350,15 @@ export default function ExploreScreen() {
         <View style={styles.quickRow}>
           <TouchableOpacity style={styles.quickBtn} onPress={() => router.push('/map')} accessibilityRole="button">
             <Ionicons name="map-outline" size={16} color="#fff" />
-            <Text style={styles.quickBtnText}>Map View</Text>
+            <Text style={styles.quickBtnText}>{t('explore.mapView')}</Text>
           </TouchableOpacity>
           <View style={styles.quickBtn}>
             <Ionicons name="shield-checkmark-outline" size={16} color="#1fc7aa" />
-            <Text style={styles.quickBtnText}>Trip Protection</Text>
+            <Text style={styles.quickBtnText}>{t('explore.tripProtection')}</Text>
           </View>
           <View style={styles.quickBtn}>
             <Ionicons name="flash-outline" size={16} color="#fbbf24" />
-            <Text style={styles.quickBtnText}>Instant Book</Text>
+            <Text style={styles.quickBtnText}>{t('explore.instantBook')}</Text>
           </View>
         </View>
       </LinearGradient>
@@ -366,25 +368,25 @@ export default function ExploreScreen() {
       {/* Location status */}
       {userLocation && (
         <View style={{ paddingHorizontal: spacing.lg, marginBottom: spacing.sm }}>
-          <Text style={{ fontSize: fontSize.xs, color: colors.success, fontWeight: '600' }}>📍 Location enabled — showing cars near you</Text>
+          <Text style={{ fontSize: fontSize.xs, color: colors.success, fontWeight: '600' }}>{t('explore.locationEnabled')}</Text>
         </View>
       )}
 
       {/* Saved favorites */}
       {favorites.length > 0 && (
         <View style={{ marginBottom: spacing.md }}>
-          <Text style={{ paddingHorizontal: spacing.lg, fontSize: fontSize.md, fontWeight: '700', color: colors.ink, marginBottom: spacing.sm }}>❤️ Saved Cars</Text>
+          <Text style={{ paddingHorizontal: spacing.lg, fontSize: fontSize.md, fontWeight: '700', color: colors.ink, marginBottom: spacing.sm }}>{t('explore.savedCars')}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.sm }}>
             {favorites.map((fav) => (
-              <TouchableOpacity key={fav.id} style={{ width: 160, borderRadius: 12, backgroundColor: colors.card, overflow: 'hidden', elevation: 1 }} onPress={() => router.push(`/listing/${fav.id}`)} accessibilityRole="button" accessibilityLabel={`View saved car: ${fav.title || fav.vehicleLabel}`}>
+              <TouchableOpacity key={fav.id} style={{ width: 160, borderRadius: 12, backgroundColor: colors.card, overflow: 'hidden', elevation: 1 }} onPress={() => router.push(`/listing/${fav.id}`)} accessibilityRole="button" accessibilityLabel={t('explore.viewSavedCar', { title: fav.title || fav.vehicleLabel })}>
                 {fav.primaryImageUrl ? (
-                  <Image source={{ uri: fav.primaryImageUrl }} style={{ width: 160, height: 90 }} resizeMode="cover" accessibilityLabel={`Photo of ${fav.title || fav.vehicleLabel}`} />
+                  <Image source={{ uri: fav.primaryImageUrl }} style={{ width: 160, height: 90 }} resizeMode="cover" accessibilityLabel={t('explore.photoOf', { title: fav.title || fav.vehicleLabel })} />
                 ) : (
-                  <View style={{ width: 160, height: 90, backgroundColor: colors.border, justifyContent: 'center', alignItems: 'center' }}><Text style={{ color: colors.muted, fontSize: fontSize.xs }}>No Photo</Text></View>
+                  <View style={{ width: 160, height: 90, backgroundColor: colors.border, justifyContent: 'center', alignItems: 'center' }}><Text style={{ color: colors.muted, fontSize: fontSize.xs }}>{t('explore.noPhoto')}</Text></View>
                 )}
                 <View style={{ padding: spacing.sm }}>
                   <Text style={{ fontWeight: '600', color: colors.ink, fontSize: fontSize.xs }} numberOfLines={1}>{fav.title || fav.vehicleLabel}</Text>
-                  <Text style={{ fontWeight: '700', color: colors.brand, fontSize: fontSize.xs }}>{fmtMoney(fav.baseDailyRate)}/day</Text>
+                  <Text style={{ fontWeight: '700', color: colors.brand, fontSize: fontSize.xs }}>{fmtMoney(fav.baseDailyRate)}{t('common.perDay')}</Text>
                 </View>
               </TouchableOpacity>
             ))}
@@ -403,7 +405,7 @@ export default function ExploreScreen() {
             accessibilityState={{ selected: filter === f }}
           >
             <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>
-              {f === 'ALL' ? 'All Cars' : f === 'INSTANT' ? 'Instant Book' : 'Delivery'}
+              {f === 'ALL' ? t('explore.allCars') : f === 'INSTANT' ? t('explore.instantBook') : t('explore.delivery')}
             </Text>
           </TouchableOpacity>
         ))}
@@ -412,11 +414,11 @@ export default function ExploreScreen() {
       {/* Listings header */}
       <View style={{ paddingHorizontal: spacing.lg, marginBottom: spacing.sm }}>
         <Text style={{ fontSize: fontSize.lg, fontWeight: '800', color: colors.ink }}>
-          {datesSearched ? 'Available Cars' : 'Featured Cars'}
+          {datesSearched ? t('explore.availableCars') : t('explore.featuredCars')}
         </Text>
         {datesSearched && (
           <Text style={{ fontSize: fontSize.xs, color: colors.muted, marginTop: 2 }}>
-            {pickupDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} — {returnDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · {filteredListings.length} result{filteredListings.length !== 1 ? 's' : ''}
+            {pickupDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} — {returnDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · {t('explore.resultCount', { count: filteredListings.length })}
           </Text>
         )}
       </View>

@@ -5,8 +5,10 @@ import { hostApi, readHostSession } from '../../lib/hostApi';
 import { fmtMoney, fmtDateTime } from '../../lib/format';
 import { colors, spacing, fontSize } from '../../lib/theme';
 import { logError } from '../../lib/logger';
+import { useTranslation } from 'react-i18next';
 
 export default function HostEarningsScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -28,30 +30,30 @@ export default function HostEarningsScreen() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: spacing.lg, paddingBottom: 60 }}>
-      <Text onPress={() => router.back()} style={{ color: colors.brand, fontWeight: '600', marginBottom: spacing.md }}>← Dashboard</Text>
-      <Text style={{ fontSize: fontSize.xl, fontWeight: '800', color: colors.ink, marginBottom: spacing.lg }}>Earnings</Text>
+      <Text onPress={() => router.back()} style={{ color: colors.brand, fontWeight: '600', marginBottom: spacing.md }}>{t('hostEarnings.backToDashboard')}</Text>
+      <Text style={{ fontSize: fontSize.xl, fontWeight: '800', color: colors.ink, marginBottom: spacing.lg }}>{t('hostEarnings.title')}</Text>
 
       <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg }}>
         <View style={[styles.sumCard, { flex: 1 }]}>
-          <Text style={{ fontSize: fontSize.xs, color: colors.muted, fontWeight: '600', textTransform: 'uppercase' }}>Total Earned</Text>
+          <Text style={{ fontSize: fontSize.xs, color: colors.muted, fontWeight: '600', textTransform: 'uppercase' }}>{t('hostEarnings.totalEarned')}</Text>
           <Text style={{ fontSize: fontSize.xxl, fontWeight: '800', color: colors.success }}>{fmtMoney(totalEarned)}</Text>
-          <Text style={{ fontSize: fontSize.xs, color: colors.muted }}>{completed.length} trips</Text>
+          <Text style={{ fontSize: fontSize.xs, color: colors.muted }}>{t('hostEarnings.tripCount', { count: completed.length })}</Text>
         </View>
         <View style={[styles.sumCard, { flex: 1 }]}>
-          <Text style={{ fontSize: fontSize.xs, color: colors.muted, fontWeight: '600', textTransform: 'uppercase' }}>Pending</Text>
+          <Text style={{ fontSize: fontSize.xs, color: colors.muted, fontWeight: '600', textTransform: 'uppercase' }}>{t('hostEarnings.pending')}</Text>
           <Text style={{ fontSize: fontSize.xxl, fontWeight: '800', color: colors.warning }}>{fmtMoney(pendingAmount)}</Text>
-          <Text style={{ fontSize: fontSize.xs, color: colors.muted }}>{pending.length} trips</Text>
+          <Text style={{ fontSize: fontSize.xs, color: colors.muted }}>{t('hostEarnings.tripCount', { count: pending.length })}</Text>
         </View>
       </View>
 
       <View style={styles.sumCard}>
-        <Text style={{ fontSize: fontSize.xs, color: colors.muted, fontWeight: '600', textTransform: 'uppercase' }}>Payout Status</Text>
+        <Text style={{ fontSize: fontSize.xs, color: colors.muted, fontWeight: '600', textTransform: 'uppercase' }}>{t('hostEarnings.payoutStatus')}</Text>
         <Text style={{ fontSize: fontSize.md, fontWeight: '700', color: profile?.payoutEnabled ? colors.success : colors.error, marginTop: 4 }}>
-          {profile?.payoutEnabled ? 'Enabled' : 'Not configured'}
+          {profile?.payoutEnabled ? t('hostEarnings.enabled') : t('hostEarnings.notConfigured')}
         </Text>
       </View>
 
-      <Text style={{ fontSize: fontSize.md, fontWeight: '700', color: colors.ink, marginTop: spacing.lg, marginBottom: spacing.sm }}>Earnings History</Text>
+      <Text style={{ fontSize: fontSize.md, fontWeight: '700', color: colors.ink, marginTop: spacing.lg, marginBottom: spacing.sm }}>{t('hostEarnings.history')}</Text>
       {completed.map((t) => (
         <View key={t.id} style={styles.card}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -61,7 +63,7 @@ export default function HostEarningsScreen() {
           <Text style={{ fontSize: fontSize.xs, color: colors.muted }}>{t.listing?.title}{t.scheduledReturnAt ? ` · ${fmtDateTime(t.scheduledReturnAt)}` : ''}</Text>
         </View>
       ))}
-      {!completed.length && <Text style={{ color: colors.muted }}>No completed trips yet.</Text>}
+      {!completed.length && <Text style={{ color: colors.muted }}>{t('hostEarnings.noCompletedTrips')}</Text>}
     </ScrollView>
   );
 }

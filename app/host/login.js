@@ -3,8 +3,10 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingVi
 import { useRouter } from 'expo-router';
 import { hostLogin } from '../../lib/hostApi';
 import { colors, spacing, fontSize } from '../../lib/theme';
+import { useTranslation } from 'react-i18next';
 
 export default function HostLoginScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -12,7 +14,7 @@ export default function HostLoginScreen() {
   const [error, setError] = useState('');
 
   async function handleLogin() {
-    if (!email.trim() || !password) { setError('Email and password required'); return; }
+    if (!email.trim() || !password) { setError(t('hostLogin.emailPasswordRequired')); return; }
     setLoading(true); setError('');
     try {
       await hostLogin(email.trim(), password);
@@ -24,16 +26,16 @@ export default function HostLoginScreen() {
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.bg }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={styles.center}>
-        <Text style={styles.title}>Host Sign In</Text>
-        <Text style={styles.subtitle}>Manage your listings, trips, and earnings.</Text>
+        <Text style={styles.title}>{t('hostLogin.title')}</Text>
+        <Text style={styles.subtitle}>{t('hostLogin.subtitle')}</Text>
         {error ? <Text style={styles.error}>{error}</Text> : null}
-        <TextInput style={styles.input} placeholder="Email" placeholderTextColor={colors.muted} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" accessibilityLabel="Email" />
-        <TextInput style={styles.input} placeholder="Password" placeholderTextColor={colors.muted} value={password} onChangeText={setPassword} secureTextEntry accessibilityLabel="Password" />
+        <TextInput style={styles.input} placeholder={t('hostLogin.email')} placeholderTextColor={colors.muted} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" accessibilityLabel={t('hostLogin.email')} />
+        <TextInput style={styles.input} placeholder={t('hostLogin.password')} placeholderTextColor={colors.muted} value={password} onChangeText={setPassword} secureTextEntry accessibilityLabel={t('hostLogin.password')} />
         <TouchableOpacity style={styles.btn} onPress={handleLogin} disabled={loading} accessibilityRole="button">
-          <Text style={styles.btnText}>{loading ? 'Signing in...' : 'Sign In'}</Text>
+          <Text style={styles.btnText}>{loading ? t('hostLogin.signingIn') : t('common.signIn')}</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => router.back()} style={{ marginTop: spacing.lg }} accessibilityRole="button">
-          <Text style={{ color: colors.brand, fontWeight: '600' }}>← Back to Guest</Text>
+          <Text style={{ color: colors.brand, fontWeight: '600' }}>{t('hostLogin.backToGuest')}</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>

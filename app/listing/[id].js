@@ -6,8 +6,10 @@ import { api } from '../../lib/api';
 import { fmtMoney, fmtDateTime, vehicleLabel, locationLabel } from '../../lib/format';
 import { isFavorite, toggleFavorite } from '../../lib/favorites';
 import { colors, spacing, fontSize } from '../../lib/theme';
+import { useTranslation } from 'react-i18next';
 
 export default function ListingDetailScreen() {
+  const { t } = useTranslation();
   const { id, pickupAt, returnAt } = useLocalSearchParams();
   const router = useRouter();
   const [listing, setListing] = useState(null);
@@ -33,14 +35,14 @@ export default function ListingDetailScreen() {
         const featured = boot?.featuredCarSharingListings || [];
         const match = featured.find((l) => l.id === id);
         setListing(match || null);
-        if (!match) setError('Listing not found');
+        if (!match) setError(t('listing.notFound'));
         if (match?.id) isFavorite(match.id).then(setFaved);
 
         if (match?.host?.id) {
           api(`/api/public/booking/hosts/${match.host.id}`).then((hp) => setHostProfile(hp)).catch(() => {});
         }
       } catch (err) {
-        setError(err?.message || 'Unable to load listing');
+        setError(err?.message || t('listing.unableToLoad'));
       } finally {
         setLoading(false);
       }
@@ -48,7 +50,7 @@ export default function ListingDetailScreen() {
   }, [id]);
 
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={colors.brand} /></View>;
-  if (error || !listing) return <View style={styles.center}><Text style={styles.error}>{error || 'Listing not found'}</Text></View>;
+  if (error || !listing) return <View style={styles.center}><Text style={styles.error}>{error || t('listing.notFound')}</Text></View>;
 
   const images = [listing.primaryImageUrl, ...(listing.imageUrls || [])].filter(Boolean);
   const reviews = hostProfile?.reviews || [];
@@ -59,7 +61,7 @@ export default function ListingDetailScreen() {
       {images.length > 0 && (
         <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={{ height: 260 }}>
           {images.map((url, idx) => (
-            <Image key={idx} source={{ uri: url }} style={styles.galleryImage} resizeMode="cover" accessibilityLabel={`Photo ${idx + 1} of ${listing.title || vehicleLabel(listing)}`} />
+            <Image key={idx} source={{ uri: url }} style={styles.galleryImage} resizeMode="cover" accessibilityLabel={t('listing.galleryPhotoA11y', { number: idx + 1, title: listing.title || vehicleLabel(listing) })} />
           ))}
         </ScrollView>
       )}
@@ -67,7 +69,7 @@ export default function ListingDetailScreen() {
       <View style={styles.body}>
         {/* Title + Price */}
         <Text style={styles.title}>{listing.title || vehicleLabel(listing)}</Text>
-        <Text style={styles.price}>{fmtMoney(listing.baseDailyRate)}/day</Text>
+        <Text style={styles.price}>{fmtMoney(listing.baseDailyRate)}{t('common.perDay')}</Text>
 
         {/* Vehicle info */}
         {listing.vehicle && (
@@ -79,8 +81,8 @@ export default function ListingDetailScreen() {
 
         {/* Badges */}
         <View style={styles.badgeRow}>
-          {listing.instantBook && <View style={styles.badge}><Text style={styles.badgeText}>⚡ Instant Book</Text></View>}
-          <View style={styles.badge}><Text style={styles.badgeText}>🛡 Trip Protection</Text></View>
+          {listing.instantBook && <View style={styles.badge}><Text style={styles.badgeText}>{t('listing.instantBook')}</Text></View>}
+          <View style={styles.badge}><Text style={styles.badgeText}>{t('listing.tripProtection')}</Text></View>
           {listing.host?.averageRating > 0 && (
             <View style={styles.badge}><Text style={styles.badgeText}>★ {Number(listing.host.averageRating).toFixed(1)} ({listing.host.reviewCount || 0})</Text></View>
           )}
@@ -94,7 +96,7 @@ export default function ListingDetailScreen() {
             </View>
             <View>
               <Text style={styles.hostName}>{listing.host.displayName}</Text>
-              <Text style={styles.hostMeta}>Verified host</Text>
+              <Text style={styles.hostMeta}>{t('listing.verifiedHost')}</Text>
             </View>
           </View>
         )}
@@ -102,22 +104,22 @@ export default function ListingDetailScreen() {
         {/* Description */}
         {listing.shortDescription && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>About this car</Text>
+            <Text style={styles.sectionTitle}>{t('listing.aboutThisCar')}</Text>
             <Text style={styles.sectionBody}>{listing.shortDescription}</Text>
           </View>
         )}
 
         {/* Trip Dates */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Select Your Dates</Text>
+          <Text style={styles.sectionTitle}>{t('listing.selectDates')}</Text>
           <View style={styles.dateRow}>
-            <TouchableOpacity style={styles.dateBtn} onPress={() => setShowPickupPicker(true)} accessibilityRole="button" accessibilityLabel={`Pickup date, ${pickupDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}>
-              <Text style={styles.dateLabel}>Pickup</Text>
+            <TouchableOpacity style={styles.dateBtn} onPress={() => setShowPickupPicker(true)} accessibilityRole="button" accessibilityLabel={t('listing.pickupDateA11y', { date: pickupDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) })}>
+              <Text style={styles.dateLabel}>{t('listing.pickup')}</Text>
               <Text style={styles.dateValue}>{pickupDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Text>
             </TouchableOpacity>
             <Text style={styles.dateArrow}>→</Text>
-            <TouchableOpacity style={styles.dateBtn} onPress={() => setShowReturnPicker(true)} accessibilityRole="button" accessibilityLabel={`Return date, ${returnDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}>
-              <Text style={styles.dateLabel}>Return</Text>
+            <TouchableOpacity style={styles.dateBtn} onPress={() => setShowReturnPicker(true)} accessibilityRole="button" accessibilityLabel={t('listing.returnDateA11y', { date: returnDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) })}>
+              <Text style={styles.dateLabel}>{t('listing.return')}</Text>
               <Text style={styles.dateValue}>{returnDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Text>
             </TouchableOpacity>
           </View>
@@ -125,7 +127,7 @@ export default function ListingDetailScreen() {
             const days = Math.max(1, Math.round((returnDate - pickupDate) / 86400000));
             return (
               <Text style={styles.dateSummary}>
-                {days} day{days !== 1 ? 's' : ''} · Est. {fmtMoney(Number(listing.baseDailyRate) * days)}
+                {t('listing.daysEstimate', { count: days, total: fmtMoney(Number(listing.baseDailyRate) * days) })}
               </Text>
             );
           })()}
@@ -158,18 +160,18 @@ export default function ListingDetailScreen() {
 
         {/* Cancellation */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Cancellation Policy</Text>
-          <Text style={styles.sectionBody}>Free cancellation up to 24 hours before pickup. Late cancellations may incur a fee.</Text>
+          <Text style={styles.sectionTitle}>{t('listing.cancellationPolicy')}</Text>
+          <Text style={styles.sectionBody}>{t('listing.cancellationBody')}</Text>
         </View>
 
         {/* Reviews */}
         {reviews.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Guest Reviews ({reviews.length})</Text>
+            <Text style={styles.sectionTitle}>{t('listing.guestReviews', { count: reviews.length })}</Text>
             {reviews.slice(0, 5).map((review) => (
               <View key={review.id} style={styles.reviewCard}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ fontWeight: '700', color: colors.ink }}>{review.reviewerName || 'Guest'}</Text>
+                  <Text style={{ fontWeight: '700', color: colors.ink }}>{review.reviewerName || t('listing.guest')}</Text>
                   <Text style={{ color: '#f5a623' }}>{'★'.repeat(Math.round(review.rating || 0))}</Text>
                 </View>
                 {review.comments && <Text style={{ color: colors.muted, marginTop: 4, lineHeight: 20 }}>{review.comments}</Text>}
@@ -181,11 +183,11 @@ export default function ListingDetailScreen() {
 
       {/* Fixed Book Button */}
       <View style={styles.bookBar}>
-        <TouchableOpacity onPress={async () => { const saved = await toggleFavorite(listing); setFaved(saved); }} style={{ padding: spacing.sm }} accessibilityRole="button" accessibilityLabel={faved ? 'Remove from saved cars' : 'Save this car'} accessibilityState={{ selected: faved }}>
+        <TouchableOpacity onPress={async () => { const saved = await toggleFavorite(listing); setFaved(saved); }} style={{ padding: spacing.sm }} accessibilityRole="button" accessibilityLabel={faved ? t('listing.removeSavedA11y') : t('listing.saveCarA11y')} accessibilityState={{ selected: faved }}>
           <Text style={{ fontSize: 24 }}>{faved ? '❤️' : '🤍'}</Text>
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={styles.bookPrice}>{fmtMoney(listing.baseDailyRate)}/day</Text>
+          <Text style={styles.bookPrice}>{fmtMoney(listing.baseDailyRate)}{t('common.perDay')}</Text>
         </View>
         <TouchableOpacity
           style={styles.bookBtn}
@@ -193,7 +195,7 @@ export default function ListingDetailScreen() {
           activeOpacity={0.8}
           accessibilityRole="button"
         >
-          <Text style={styles.bookBtnText}>Book This Car</Text>
+          <Text style={styles.bookBtnText}>{t('listing.bookThisCar')}</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

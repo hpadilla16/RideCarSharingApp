@@ -5,16 +5,9 @@ import * as ImagePicker from 'expo-image-picker';
 import { api } from '../lib/api';
 import { logError } from '../lib/logger';
 import { colors, spacing, fontSize } from '../lib/theme';
+import { useTranslation } from 'react-i18next';
 
-const PHOTO_SLOTS = [
-  { id: 'front', label: 'Front' },
-  { id: 'back', label: 'Back' },
-  { id: 'left', label: 'Left Side' },
-  { id: 'right', label: 'Right Side' },
-  { id: 'interior', label: 'Interior' },
-  { id: 'dashboard', label: 'Dashboard / Mileage' },
-  { id: 'damage', label: 'Existing Damage (if any)' },
-];
+const PHOTO_SLOT_IDS = ['front', 'back', 'left', 'right', 'interior', 'dashboard', 'damage'];
 
 function assetToEntry(asset) {
   // Keep uri for display; build a base64 data URL for upload.
@@ -26,7 +19,9 @@ function assetToEntry(asset) {
 }
 
 export default function InspectionScreen() {
+  const { t } = useTranslation();
   const { tripCode, phase } = useLocalSearchParams();
+  const PHOTO_SLOTS = PHOTO_SLOT_IDS.map((id) => ({ id, label: t(`inspection.slot_${id}`) }));
   const router = useRouter();
   const [photos, setPhotos] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -36,7 +31,7 @@ export default function InspectionScreen() {
   async function takePhoto(slotId) {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Camera Permission', 'Camera access is required to take inspection photos.');
+      Alert.alert(t('inspection.cameraPermissionTitle'), t('inspection.cameraPermissionBody'));
       return;
     }
 
@@ -55,7 +50,7 @@ export default function InspectionScreen() {
   async function pickFromGallery(slotId) {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Gallery Permission', 'Gallery access is required to select photos.');
+      Alert.alert(t('inspection.galleryPermissionTitle'), t('inspection.galleryPermissionBody'));
       return;
     }
 
@@ -74,11 +69,11 @@ export default function InspectionScreen() {
   async function handleSubmit() {
     const photoCount = Object.keys(photos).length;
     if (photoCount < 4) {
-      Alert.alert('More Photos Needed', 'Please take at least 4 photos (front, back, left, right) before submitting.');
+      Alert.alert(t('inspection.morePhotosTitle'), t('inspection.morePhotosBody'));
       return;
     }
     if (!tripCode) {
-      Alert.alert('Missing Trip', 'No trip code found for this inspection.');
+      Alert.alert(t('inspection.missingTripTitle'), t('inspection.missingTripBody'));
       return;
     }
     setSubmitting(true);
@@ -95,7 +90,7 @@ export default function InspectionScreen() {
       setDone(true);
     } catch (err) {
       logError(err, { screen: 'inspection', tripCode });
-      setError(err?.message || 'Upload failed. Check your connection and try again.');
+      setError(err?.message || t('inspection.uploadFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -105,10 +100,10 @@ export default function InspectionScreen() {
     return (
       <View style={styles.center}>
         <Text style={{ fontSize: 48, marginBottom: spacing.md }}>✅</Text>
-        <Text style={styles.title}>Inspection Complete</Text>
-        <Text style={styles.subtitle}>{Object.keys(photos).length} photos captured for trip {tripCode || ''}.</Text>
+        <Text style={styles.title}>{t('inspection.completeTitle')}</Text>
+        <Text style={styles.subtitle}>{t('inspection.photosCaptured', { count: Object.keys(photos).length, tripCode: tripCode || '' })}</Text>
         <TouchableOpacity style={styles.btn} onPress={() => router.back()} accessibilityRole="button">
-          <Text style={styles.btnText}>Done</Text>
+          <Text style={styles.btnText}>{t('common.done')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -116,11 +111,11 @@ export default function InspectionScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.lg, paddingBottom: 60 }}>
-      <Text style={styles.title}>Vehicle Inspection</Text>
+      <Text style={styles.title}>{t('inspection.title')}</Text>
       <Text style={styles.subtitle}>
-        Take photos of the vehicle before your trip. This protects both you and the host in case of disputes.
+        {t('inspection.subtitle')}
       </Text>
-      {tripCode && <Text style={styles.tripCode}>Trip: {tripCode}</Text>}
+      {tripCode && <Text style={styles.tripCode}>{t('inspection.trip', { tripCode })}</Text>}
 
       <View style={{ marginTop: spacing.lg, gap: spacing.md }}>
         {PHOTO_SLOTS.map((slot) => (
@@ -131,18 +126,18 @@ export default function InspectionScreen() {
             </View>
             {photos[slot.id] ? (
               <View>
-                <Image source={{ uri: photos[slot.id].uri }} style={styles.photo} resizeMode="cover" accessibilityLabel={`Inspection photo: ${slot.label}`} />
-                <TouchableOpacity onPress={() => setPhotos((p) => { const next = { ...p }; delete next[slot.id]; return next; })} accessibilityRole="button" accessibilityLabel={`Retake ${slot.label} photo`}>
-                  <Text style={styles.retake}>Retake</Text>
+                <Image source={{ uri: photos[slot.id].uri }} style={styles.photo} resizeMode="cover" accessibilityLabel={t('inspection.photoA11y', { label: slot.label })} />
+                <TouchableOpacity onPress={() => setPhotos((p) => { const next = { ...p }; delete next[slot.id]; return next; })} accessibilityRole="button" accessibilityLabel={t('inspection.retakeA11y', { label: slot.label })}>
+                  <Text style={styles.retake}>{t('inspection.retake')}</Text>
                 </TouchableOpacity>
               </View>
             ) : (
               <View style={styles.photoActions}>
-                <TouchableOpacity style={styles.cameraBtn} onPress={() => takePhoto(slot.id)} accessibilityRole="button" accessibilityLabel={`Take ${slot.label} photo with camera`}>
-                  <Text style={styles.cameraBtnText}>📷 Camera</Text>
+                <TouchableOpacity style={styles.cameraBtn} onPress={() => takePhoto(slot.id)} accessibilityRole="button" accessibilityLabel={t('inspection.cameraA11y', { label: slot.label })}>
+                  <Text style={styles.cameraBtnText}>{t('inspection.camera')}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.galleryBtn} onPress={() => pickFromGallery(slot.id)} accessibilityRole="button" accessibilityLabel={`Choose ${slot.label} photo from gallery`}>
-                  <Text style={styles.galleryBtnText}>🖼 Gallery</Text>
+                <TouchableOpacity style={styles.galleryBtn} onPress={() => pickFromGallery(slot.id)} accessibilityRole="button" accessibilityLabel={t('inspection.galleryA11y', { label: slot.label })}>
+                  <Text style={styles.galleryBtnText}>{t('inspection.gallery')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -151,7 +146,7 @@ export default function InspectionScreen() {
       </View>
 
       <View style={styles.summary}>
-        <Text style={styles.summaryText}>{Object.keys(photos).length} of {PHOTO_SLOTS.length} photos taken</Text>
+        <Text style={styles.summaryText}>{t('inspection.photosTaken', { count: Object.keys(photos).length, total: PHOTO_SLOTS.length })}</Text>
       </View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -162,7 +157,7 @@ export default function InspectionScreen() {
         disabled={submitting}
         accessibilityRole="button"
       >
-        <Text style={styles.btnText}>{submitting ? 'Submitting...' : 'Complete Inspection'}</Text>
+        <Text style={styles.btnText}>{submitting ? t('inspection.submitting') : t('inspection.completeInspection')}</Text>
       </TouchableOpacity>
     </ScrollView>
   );

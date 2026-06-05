@@ -5,8 +5,37 @@ import { Switch } from 'react-native';
 import { readGuestSession, clearGuestSession } from '../lib/api';
 import { isBiometricAvailable, isBiometricEnabled, setBiometricEnabled } from '../lib/biometric';
 import { colors, spacing, fontSize } from '../lib/theme';
+import { useTranslation } from 'react-i18next';
+import { setLanguage } from '../lib/i18n';
+
+function LanguageSelector() {
+  const { t, i18n } = useTranslation();
+  return (
+    <View style={[styles.menuItem, { justifyContent: 'space-between' }]}>
+      <Text style={styles.menuText}>{t('common.language')}</Text>
+      <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+        {[
+          { code: 'en', label: t('common.english') },
+          { code: 'es', label: t('common.spanish') },
+        ].map((lang) => (
+          <TouchableOpacity
+            key={lang.code}
+            onPress={() => setLanguage(lang.code)}
+            style={[styles.langBtn, i18n.language === lang.code && styles.langBtnActive]}
+            accessibilityRole="button"
+            accessibilityLabel={lang.label}
+            accessibilityState={{ selected: i18n.language === lang.code }}
+          >
+            <Text style={[styles.langText, i18n.language === lang.code && styles.langTextActive]}>{lang.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+}
 
 export default function AccountScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [customer, setCustomer] = useState(null);
   const [loggedIn, setLoggedIn] = useState(false);
@@ -32,11 +61,14 @@ export default function AccountScreen() {
   if (!loggedIn) {
     return (
       <View style={styles.center}>
-        <Text style={styles.title}>Account</Text>
-        <Text style={styles.subtitle}>Sign in to manage your bookings, messages, and reviews.</Text>
+        <Text style={styles.title}>{t('account.title')}</Text>
+        <Text style={styles.subtitle}>{t('account.signInPrompt')}</Text>
         <TouchableOpacity style={styles.btn} onPress={() => router.push('/login')} accessibilityRole="button">
-          <Text style={styles.btnText}>Sign In</Text>
+          <Text style={styles.btnText}>{t('common.signIn')}</Text>
         </TouchableOpacity>
+        <View style={{ marginTop: spacing.xl, alignSelf: 'stretch' }}>
+          <LanguageSelector />
+        </View>
       </View>
     );
   }
@@ -47,34 +79,35 @@ export default function AccountScreen() {
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{(customer?.firstName || '?')[0].toUpperCase()}</Text>
         </View>
-        <Text style={styles.name}>{[customer?.firstName, customer?.lastName].filter(Boolean).join(' ') || 'Guest'}</Text>
+        <Text style={styles.name}>{[customer?.firstName, customer?.lastName].filter(Boolean).join(' ') || t('account.guest')}</Text>
         <Text style={styles.email}>{customer?.email || ''}</Text>
       </View>
 
       <View style={styles.menu}>
         <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/trips')} accessibilityRole="button">
-          <Text style={styles.menuText}>My Trips</Text>
+          <Text style={styles.menuText}>{t('account.myTrips')}</Text>
           <Text style={styles.menuArrow}>→</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuItem} onPress={() => {}} accessibilityRole="button">
-          <Text style={styles.menuText}>Messages</Text>
+          <Text style={styles.menuText}>{t('account.messages')}</Text>
           <Text style={styles.menuArrow}>→</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuItem} onPress={() => {}} accessibilityRole="button">
-          <Text style={styles.menuText}>Reviews</Text>
+          <Text style={styles.menuText}>{t('account.reviews')}</Text>
           <Text style={styles.menuArrow}>→</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/issue')} accessibilityRole="button">
-          <Text style={styles.menuText}>Report an Issue</Text>
+          <Text style={styles.menuText}>{t('account.reportIssue')}</Text>
           <Text style={styles.menuArrow}>→</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/inspection')} accessibilityRole="button">
-          <Text style={styles.menuText}>Vehicle Inspection</Text>
+          <Text style={styles.menuText}>{t('account.vehicleInspection')}</Text>
           <Text style={styles.menuArrow}>→</Text>
         </TouchableOpacity>
+        <LanguageSelector />
         {bioAvailable && (
           <View style={[styles.menuItem, { justifyContent: 'space-between' }]}>
-            <Text style={styles.menuText}>Biometric Login</Text>
+            <Text style={styles.menuText}>{t('account.biometricLogin')}</Text>
             <Switch
               value={bioEnabled}
               onValueChange={async (val) => { await setBiometricEnabled(val); setBioEnabled(val); }}
@@ -85,7 +118,7 @@ export default function AccountScreen() {
       </View>
 
       <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} accessibilityRole="button">
-        <Text style={styles.logoutText}>Sign Out</Text>
+        <Text style={styles.logoutText}>{t('common.signOut')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -109,4 +142,8 @@ const styles = StyleSheet.create({
   menuArrow: { fontSize: fontSize.md, color: colors.muted },
   logoutBtn: { marginTop: spacing.xl, alignItems: 'center', padding: spacing.md },
   logoutText: { color: colors.error, fontWeight: '600', fontSize: fontSize.md },
+  langBtn: { paddingVertical: 6, paddingHorizontal: 14, borderRadius: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bg },
+  langBtnActive: { backgroundColor: colors.brand, borderColor: colors.brand },
+  langText: { fontSize: fontSize.sm, fontWeight: '600', color: colors.muted },
+  langTextActive: { color: colors.white },
 });

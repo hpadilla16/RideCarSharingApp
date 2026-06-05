@@ -8,6 +8,7 @@ import { colors, spacing, fontSize } from '../lib/theme';
 import { PAYMENT_ALLOWED_HOSTS, PAYMENT_SUCCESS_PATH, PAYMENT_CANCEL_PATH } from '../lib/config';
 import { logWarn } from '../lib/logger';
 import { validateCustomerInfo } from '../lib/validation';
+import { useTranslation } from 'react-i18next';
 
 // Fallbacks if /policies fetch fails — keep in sync with backend
 // car-sharing-commission.js / car-sharing-policies.js.
@@ -77,6 +78,7 @@ function isAllowedPaymentUrl(url) {
 }
 
 export default function CheckoutScreen() {
+  const { t } = useTranslation();
   const { listingId, pickupAt, returnAt } = useLocalSearchParams();
   const router = useRouter();
   const [listing, setListing] = useState(null);
@@ -100,7 +102,7 @@ export default function CheckoutScreen() {
         const match = (boot?.featuredCarSharingListings || []).find((l) => l.id === listingId);
         setListing(match || null);
       } catch (err) {
-        setError(err?.message || 'Unable to load listing');
+        setError(err?.message || t('checkout.unableToLoadListing'));
       } finally {
         setLoading(false);
       }
@@ -139,7 +141,7 @@ export default function CheckoutScreen() {
 
   async function handleSubmit() {
     if (!isProtectionSelected) {
-      setError('Please select a Trip Protection tier or confirm you have your own insurance.');
+      setError(t('checkout.selectProtectionError'));
       return;
     }
     const infoError = validateInfo();
@@ -171,22 +173,22 @@ export default function CheckoutScreen() {
         setStep(3);
       }
     } catch (err) {
-      setError(err?.message || 'Unable to complete booking');
+      setError(err?.message || t('checkout.unableToCompleteBooking'));
     } finally {
       setSubmitting(false);
     }
   }
 
-  if (loading) return <View style={styles.center}><Text style={styles.muted}>Loading...</Text></View>;
+  if (loading) return <View style={styles.center}><Text style={styles.muted}>{t('common.loading')}</Text></View>;
 
   // Payment WebView
   if (step === 'payment' && paymentUrl) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg }}>
         <View style={styles.paymentHeader}>
-          <Text style={styles.paymentHeaderTitle}>Complete Payment</Text>
-          <TouchableOpacity onPress={() => setStep(3)} accessibilityRole="button" accessibilityLabel="Done with payment">
-            <Text style={{ color: colors.brand, fontWeight: '700' }}>Done</Text>
+          <Text style={styles.paymentHeaderTitle}>{t('checkout.completePayment')}</Text>
+          <TouchableOpacity onPress={() => setStep(3)} accessibilityRole="button" accessibilityLabel={t('checkout.doneWithPaymentA11y')}>
+            <Text style={{ color: colors.brand, fontWeight: '700' }}>{t('common.done')}</Text>
           </TouchableOpacity>
         </View>
         <WebView
@@ -196,7 +198,7 @@ export default function CheckoutScreen() {
           renderLoading={() => (
             <View style={[styles.center, { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }]}>
               <ActivityIndicator size="large" color={colors.brand} />
-              <Text style={{ color: colors.muted, marginTop: spacing.md }}>Loading payment portal...</Text>
+              <Text style={{ color: colors.muted, marginTop: spacing.md }}>{t('checkout.loadingPaymentPortal')}</Text>
             </View>
           )}
           onShouldStartLoadWithRequest={(request) => {
@@ -213,13 +215,13 @@ export default function CheckoutScreen() {
               if (path.endsWith(PAYMENT_SUCCESS_PATH)) {
                 setStep(3);
               } else if (path.endsWith(PAYMENT_CANCEL_PATH)) {
-                setError('Payment was cancelled. You can try again.');
+                setError(t('checkout.paymentCancelled'));
                 setStep(2);
               }
             } catch {}
           }}
           onError={() => {
-            setError('Payment page failed to load. Please try again.');
+            setError(t('checkout.paymentFailedToLoad'));
             setStep(2);
           }}
         />
@@ -231,10 +233,10 @@ export default function CheckoutScreen() {
     return (
       <View style={styles.center}>
         <Text style={{ fontSize: 48, marginBottom: spacing.md }}>🎉</Text>
-        <Text style={styles.title}>Booking Confirmed!</Text>
-        <Text style={styles.subtitle}>Check your email for trip details and next steps.</Text>
+        <Text style={styles.title}>{t('checkout.bookingConfirmed')}</Text>
+        <Text style={styles.subtitle}>{t('checkout.checkEmail')}</Text>
         <TouchableOpacity style={styles.btn} onPress={() => router.replace('/trips')} accessibilityRole="button">
-          <Text style={styles.btnText}>View My Trips</Text>
+          <Text style={styles.btnText}>{t('checkout.viewMyTrips')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -249,13 +251,13 @@ export default function CheckoutScreen() {
           <View style={[styles.progressLine, step >= 2 && styles.progressLineActive]} />
           <View style={[styles.progressDot, step >= 2 && styles.progressDotActive]} />
         </View>
-        <Text style={styles.stepLabel}>Step {step} of 2</Text>
+        <Text style={styles.stepLabel}>{t('checkout.stepOf', { step, total: 2 })}</Text>
 
         {/* Vehicle summary */}
         {listing && (
           <View style={styles.summaryCard}>
             <Text style={styles.summaryTitle}>{listing.title || vehicleLabel(listing)}</Text>
-            <Text style={styles.summaryPrice}>{fmtMoney(listing.baseDailyRate)}/day</Text>
+            <Text style={styles.summaryPrice}>{fmtMoney(listing.baseDailyRate)}{t('common.perDay')}</Text>
           </View>
         )}
 
@@ -263,30 +265,30 @@ export default function CheckoutScreen() {
 
         {step === 1 && (
           <>
-            <Text style={styles.sectionTitle}>Your Information</Text>
-            <TextInput style={styles.input} placeholder="First name" placeholderTextColor={colors.muted} value={customer.firstName} onChangeText={(v) => setCustomer((c) => ({ ...c, firstName: v }))} accessibilityLabel="First name" />
-            <TextInput style={styles.input} placeholder="Last name" placeholderTextColor={colors.muted} value={customer.lastName} onChangeText={(v) => setCustomer((c) => ({ ...c, lastName: v }))} accessibilityLabel="Last name" />
-            <TextInput style={styles.input} placeholder="Email" placeholderTextColor={colors.muted} value={customer.email} onChangeText={(v) => setCustomer((c) => ({ ...c, email: v }))} keyboardType="email-address" autoCapitalize="none" accessibilityLabel="Email" />
-            <TextInput style={styles.input} placeholder="Phone" placeholderTextColor={colors.muted} value={customer.phone} onChangeText={(v) => setCustomer((c) => ({ ...c, phone: v }))} keyboardType="phone-pad" accessibilityLabel="Phone" />
+            <Text style={styles.sectionTitle}>{t('checkout.yourInformation')}</Text>
+            <TextInput style={styles.input} placeholder={t('checkout.firstName')} placeholderTextColor={colors.muted} value={customer.firstName} onChangeText={(v) => setCustomer((c) => ({ ...c, firstName: v }))} accessibilityLabel={t('checkout.firstName')} />
+            <TextInput style={styles.input} placeholder={t('checkout.lastName')} placeholderTextColor={colors.muted} value={customer.lastName} onChangeText={(v) => setCustomer((c) => ({ ...c, lastName: v }))} accessibilityLabel={t('checkout.lastName')} />
+            <TextInput style={styles.input} placeholder={t('checkout.email')} placeholderTextColor={colors.muted} value={customer.email} onChangeText={(v) => setCustomer((c) => ({ ...c, email: v }))} keyboardType="email-address" autoCapitalize="none" accessibilityLabel={t('checkout.email')} />
+            <TextInput style={styles.input} placeholder={t('checkout.phone')} placeholderTextColor={colors.muted} value={customer.phone} onChangeText={(v) => setCustomer((c) => ({ ...c, phone: v }))} keyboardType="phone-pad" accessibilityLabel={t('checkout.phone')} />
 
             <TouchableOpacity style={[styles.btn, !isInfoComplete && styles.btnDisabled]} onPress={handleContinue} disabled={!isInfoComplete} accessibilityRole="button">
-              <Text style={styles.btnText}>Continue</Text>
+              <Text style={styles.btnText}>{t('common.continue')}</Text>
             </TouchableOpacity>
           </>
         )}
 
         {step === 2 && (
           <>
-            <Text style={styles.sectionTitle}>Review & Confirm</Text>
+            <Text style={styles.sectionTitle}>{t('checkout.reviewConfirm')}</Text>
             <View style={styles.reviewCard}>
-              <Text style={styles.reviewLabel}>Guest</Text>
+              <Text style={styles.reviewLabel}>{t('checkout.guest')}</Text>
               <Text style={styles.reviewValue}>{customer.firstName} {customer.lastName}</Text>
               <Text style={styles.reviewValue}>{customer.email}</Text>
             </View>
 
             {/* Trip Protection Tier Selection */}
-            <Text style={styles.sectionTitle}>Trip Protection</Text>
-            <Text style={{ fontSize: fontSize.xs, color: colors.muted, marginBottom: spacing.sm }}>Trip Protection is NOT insurance. It is a limited program where Ride reimburses the host's insurance deductible only. Your own auto insurance and the host's auto insurance are the primary coverage. Ride does not cover repair costs, liability claims, or property damage directly.</Text>
+            <Text style={styles.sectionTitle}>{t('checkout.tripProtection')}</Text>
+            <Text style={{ fontSize: fontSize.xs, color: colors.muted, marginBottom: spacing.sm }}>{t('checkout.tripProtectionDisclaimer')}</Text>
 
             {tiers.map((tier) => (
               <TouchableOpacity
@@ -294,26 +296,26 @@ export default function CheckoutScreen() {
                 style={[styles.tierCard, protectionTier === tier.id && styles.tierCardActive]}
                 onPress={() => setProtectionTier(tier.id)}
                 accessibilityRole="button"
-                accessibilityLabel={`${tier.label} protection tier, ${tier.price}`}
+                accessibilityLabel={t('checkout.tierA11y', { label: tier.label, price: tier.price })}
                 accessibilityState={{ selected: protectionTier === tier.id }}
               >
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
                     <View style={[styles.tierRadio, protectionTier === tier.id && styles.tierRadioActive]} />
                     <Text style={{ fontWeight: '700', color: colors.ink, fontSize: fontSize.md }}>{tier.label}</Text>
-                    {tier.recommended && <Text style={{ fontSize: fontSize.xs, color: colors.success, fontWeight: '700' }}>Recommended</Text>}
+                    {tier.recommended && <Text style={{ fontSize: fontSize.xs, color: colors.success, fontWeight: '700' }}>{t('checkout.recommended')}</Text>}
                   </View>
                   <Text style={{ fontWeight: '800', color: colors.brand, fontSize: fontSize.md }}>{tier.price}</Text>
                 </View>
                 <Text style={{ fontSize: fontSize.sm, color: colors.muted, marginTop: 4 }}>{tier.desc}</Text>
                 {tier.id !== 'BASIC' && (
                   <View style={{ flexDirection: 'row', gap: spacing.lg, marginTop: spacing.xs }}>
-                    <Text style={{ fontSize: fontSize.xs, color: colors.muted }}>Deductible: {tier.deductible}</Text>
-                    <Text style={{ fontSize: fontSize.xs, color: colors.muted }}>Up to: {tier.limit}</Text>
+                    <Text style={{ fontSize: fontSize.xs, color: colors.muted }}>{t('checkout.deductible', { value: tier.deductible })}</Text>
+                    <Text style={{ fontSize: fontSize.xs, color: colors.muted }}>{t('checkout.upTo', { value: tier.limit })}</Text>
                   </View>
                 )}
                 {tier.id !== 'BASIC' && (
-                  <Text style={{ fontSize: fontSize.xs, color: colors.success, fontWeight: '600', marginTop: 4 }}>🛡 Ride reimburses the host's insurance deductible — host must carry valid auto insurance with state minimums</Text>
+                  <Text style={{ fontSize: fontSize.xs, color: colors.success, fontWeight: '600', marginTop: 4 }}>{t('checkout.reimbursementNote')}</Text>
                 )}
               </TouchableOpacity>
             ))}
@@ -323,39 +325,39 @@ export default function CheckoutScreen() {
               style={[styles.tierCard, declinedProtection && styles.tierCardActive, { borderColor: declinedProtection ? colors.warning : colors.border }]}
               onPress={() => { setDeclinedProtection(!declinedProtection); if (!declinedProtection) setProtectionTier('BASIC'); }}
               accessibilityRole="button"
-              accessibilityLabel="I have my own insurance"
+              accessibilityLabel={t('checkout.ownInsurance')}
               accessibilityState={{ selected: declinedProtection }}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
                 <View style={[styles.tierRadio, declinedProtection && { borderColor: colors.warning, backgroundColor: colors.warning }]} />
-                <Text style={{ fontWeight: '700', color: colors.ink, fontSize: fontSize.md }}>I have my own insurance</Text>
+                <Text style={{ fontWeight: '700', color: colors.ink, fontSize: fontSize.md }}>{t('checkout.ownInsurance')}</Text>
               </View>
-              <Text style={{ fontSize: fontSize.sm, color: colors.muted, marginTop: 4 }}>I decline Trip Protection and confirm I carry personal auto insurance that covers peer-to-peer rentals.</Text>
+              <Text style={{ fontSize: fontSize.sm, color: colors.muted, marginTop: 4 }}>{t('checkout.ownInsuranceDesc')}</Text>
               {declinedProtection && (
                 <TouchableOpacity
                   style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm }}
                   onPress={() => setOwnInsuranceConfirmed(!ownInsuranceConfirmed)}
                   accessibilityRole="checkbox"
-                  accessibilityLabel="I confirm I carry valid auto insurance and accept full financial responsibility"
+                  accessibilityLabel={t('checkout.confirmInsuranceA11y')}
                   accessibilityState={{ checked: ownInsuranceConfirmed }}
                 >
                   <View style={{ width: 20, height: 20, borderRadius: 4, borderWidth: 2, borderColor: ownInsuranceConfirmed ? colors.brand : colors.border, backgroundColor: ownInsuranceConfirmed ? colors.brand : 'transparent', justifyContent: 'center', alignItems: 'center' }}>
                     {ownInsuranceConfirmed && <Text style={{ color: colors.white, fontSize: 12, fontWeight: '800' }}>✓</Text>}
                   </View>
-                  <Text style={{ flex: 1, fontSize: fontSize.xs, color: colors.ink }}>I confirm I carry valid auto insurance and accept full financial responsibility for any damages not covered by my policy.</Text>
+                  <Text style={{ flex: 1, fontSize: fontSize.xs, color: colors.ink }}>{t('checkout.confirmInsurance')}</Text>
                 </TouchableOpacity>
               )}
             </TouchableOpacity>
 
             {/* Exclusions */}
             <View style={{ padding: spacing.md, backgroundColor: 'rgba(255,194,88,0.06)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,194,88,0.15)' }}>
-              <Text style={{ fontWeight: '700', color: colors.warning, fontSize: fontSize.sm, marginBottom: spacing.xs }}>⚠️ NOT covered by any protection tier:</Text>
+              <Text style={{ fontWeight: '700', color: colors.warning, fontSize: fontSize.sm, marginBottom: spacing.xs }}>{t('checkout.notCovered')}</Text>
               <Text style={{ fontSize: fontSize.xs, color: colors.muted, lineHeight: 18 }}>{exclusionsText}</Text>
             </View>
 
             {/* Optional Add-ons */}
-            <Text style={styles.sectionTitle}>Optional Add-ons</Text>
-            <Text style={{ fontSize: fontSize.xs, color: colors.muted, marginBottom: spacing.sm }}>Available add-ons depend on what the host offers for this vehicle.</Text>
+            <Text style={styles.sectionTitle}>{t('checkout.optionalAddons')}</Text>
+            <Text style={{ fontSize: fontSize.xs, color: colors.muted, marginBottom: spacing.sm }}>{t('checkout.addonsNote')}</Text>
 
             {addons.map((addon) => (
               <View key={addon.id} style={{ flexDirection: 'row', alignItems: 'center', padding: spacing.sm, marginBottom: spacing.xs, backgroundColor: colors.card, borderRadius: 10, borderWidth: 1, borderColor: colors.border }}>
@@ -368,49 +370,49 @@ export default function CheckoutScreen() {
             ))}
 
             {/* Key Policies */}
-            <Text style={styles.sectionTitle}>Trip Policies</Text>
+            <Text style={styles.sectionTitle}>{t('checkout.tripPolicies')}</Text>
 
             <View style={styles.reviewCard}>
-              <Text style={styles.reviewLabel}>Cancellation</Text>
-              <Text style={styles.reviewValue}>Free cancellation up to 48 hours before pickup. 24-48hr: 50% of first day. Under 24hr: 100% of first day. No-show: full trip charged.</Text>
+              <Text style={styles.reviewLabel}>{t('checkout.cancellation')}</Text>
+              <Text style={styles.reviewValue}>{t('checkout.cancellationPolicy')}</Text>
             </View>
 
             <View style={styles.reviewCard}>
-              <Text style={styles.reviewLabel}>Mileage</Text>
-              <Text style={styles.reviewValue}>200 miles/day included (host may set different limit). Excess: $0.35/mile.</Text>
+              <Text style={styles.reviewLabel}>{t('checkout.mileage')}</Text>
+              <Text style={styles.reviewValue}>{t('checkout.mileagePolicy')}</Text>
             </View>
 
             <View style={styles.reviewCard}>
-              <Text style={styles.reviewLabel}>Fuel</Text>
-              <Text style={styles.reviewValue}>Return at same fuel level. Shortage: $5/gal + $25 refueling fee. EV: $0.30/kWh + $15 fee.</Text>
+              <Text style={styles.reviewLabel}>{t('checkout.fuel')}</Text>
+              <Text style={styles.reviewValue}>{t('checkout.fuelPolicy')}</Text>
             </View>
 
             <View style={styles.reviewCard}>
-              <Text style={styles.reviewLabel}>Late Return</Text>
-              <Text style={styles.reviewValue}>30-min grace period. After: $25/hr. 2+ hours: full extra day. 6+ hours no contact: deposit forfeited.</Text>
+              <Text style={styles.reviewLabel}>{t('checkout.lateReturn')}</Text>
+              <Text style={styles.reviewValue}>{t('checkout.lateReturnPolicy')}</Text>
             </View>
 
             <View style={styles.reviewCard}>
-              <Text style={styles.reviewLabel}>Security Deposit</Text>
-              <Text style={styles.reviewValue}>$250 hold at booking (up to $500 for select vehicles). Released within 48 hours of clean return.</Text>
+              <Text style={styles.reviewLabel}>{t('checkout.securityDeposit')}</Text>
+              <Text style={styles.reviewValue}>{t('checkout.securityDepositPolicy')}</Text>
             </View>
 
             <View style={styles.reviewCard}>
-              <Text style={styles.reviewLabel}>Tolls</Text>
-              <Text style={styles.reviewValue}>If vehicle has a toll pass and you add Toll Pass ($3.50/day): unlimited tolls. Without: tolls charged by plate + $5 admin fee per toll.</Text>
+              <Text style={styles.reviewLabel}>{t('checkout.tolls')}</Text>
+              <Text style={styles.reviewValue}>{t('checkout.tollsPolicy')}</Text>
             </View>
 
             <View style={styles.reviewCard}>
-              <Text style={styles.reviewLabel}>Cleaning</Text>
-              <Text style={styles.reviewValue}>Return vehicle clean. Fees: $30 (light) to $250 (severe). Smoking: $250. Unauthorized pets: $150.</Text>
+              <Text style={styles.reviewLabel}>{t('checkout.cleaning')}</Text>
+              <Text style={styles.reviewValue}>{t('checkout.cleaningPolicy')}</Text>
             </View>
 
             <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-              <TouchableOpacity style={styles.ghostBtn} onPress={() => setStep(1)} accessibilityRole="button" accessibilityLabel="Back to your information">
-                <Text style={styles.ghostBtnText}>← Back</Text>
+              <TouchableOpacity style={styles.ghostBtn} onPress={() => setStep(1)} accessibilityRole="button" accessibilityLabel={t('checkout.backToInfoA11y')}>
+                <Text style={styles.ghostBtnText}>{t('common.back')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.btn, { flex: 1 }]} onPress={handleSubmit} disabled={submitting} accessibilityRole="button">
-                <Text style={styles.btnText}>{submitting ? 'Confirming...' : 'Confirm Booking'}</Text>
+                <Text style={styles.btnText}>{submitting ? t('checkout.confirming') : t('checkout.confirmBooking')}</Text>
               </TouchableOpacity>
             </View>
           </>

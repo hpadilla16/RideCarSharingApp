@@ -7,8 +7,11 @@ import { useThemeColors } from '../lib/theme';
 import { registerForPushNotifications, addNotificationResponseListener } from '../lib/notifications';
 import { shouldShowOnboarding } from './onboarding';
 import ErrorBoundary from '../components/ErrorBoundary';
+import '../lib/i18n';
+import { useTranslation } from 'react-i18next';
 
 export default function AppLayout() {
+  const { t } = useTranslation();
   const scheme = useColorScheme();
   const c = useThemeColors();
   const router = useRouter();
@@ -41,8 +44,8 @@ export default function AppLayout() {
         <Tabs.Screen
           name="index"
           options={{
-            title: 'Explore',
-            tabBarLabel: 'Explore',
+            title: t('layout.explore'),
+            tabBarLabel: t('layout.explore'),
             headerShown: false,
             tabBarIcon: ({ color, size }) => <Ionicons name="search" size={size} color={color} />,
           }}
@@ -50,33 +53,33 @@ export default function AppLayout() {
         <Tabs.Screen
           name="trips"
           options={{
-            title: 'My Trips',
-            tabBarLabel: 'Trips',
+            title: t('layout.myTrips'),
+            tabBarLabel: t('layout.trips'),
             tabBarIcon: ({ color, size }) => <Ionicons name="car-outline" size={size} color={color} />,
           }}
         />
         <Tabs.Screen
           name="account"
           options={{
-            title: 'Account',
-            tabBarLabel: 'Account',
+            title: t('layout.account'),
+            tabBarLabel: t('layout.account'),
             tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
           }}
         />
-        <Tabs.Screen name="listing/[id]" options={{ href: null, title: 'Listing' }} />
-        <Tabs.Screen name="checkout" options={{ href: null, title: 'Checkout' }} />
-        <Tabs.Screen name="login" options={{ href: null, title: 'Sign In' }} />
-        <Tabs.Screen name="chat/[token]" options={{ href: null, title: 'Trip Chat' }} />
-        <Tabs.Screen name="issue" options={{ href: null, title: 'Report Issue' }} />
-        <Tabs.Screen name="review" options={{ href: null, title: 'Review' }} />
-        <Tabs.Screen name="inspection" options={{ href: null, title: 'Inspection' }} />
-        <Tabs.Screen name="map" options={{ href: null, title: 'Map', headerShown: false }} />
-        <Tabs.Screen name="onboarding" options={{ href: null, title: 'Welcome', headerShown: false }} />
-        <Tabs.Screen name="host/index" options={{ href: null, title: 'Host Dashboard' }} />
-        <Tabs.Screen name="host/login" options={{ href: null, title: 'Host Login' }} />
-        <Tabs.Screen name="host/trips" options={{ href: null, title: 'Host Trips' }} />
-        <Tabs.Screen name="host/earnings" options={{ href: null, title: 'Host Earnings' }} />
-        <Tabs.Screen name="host/listings" options={{ href: null, title: 'Host Listings' }} />
+        <Tabs.Screen name="listing/[id]" options={{ href: null, title: t('layout.listing') }} />
+        <Tabs.Screen name="checkout" options={{ href: null, title: t('layout.checkout') }} />
+        <Tabs.Screen name="login" options={{ href: null, title: t('common.signIn') }} />
+        <Tabs.Screen name="chat/[token]" options={{ href: null, title: t('layout.tripChat') }} />
+        <Tabs.Screen name="issue" options={{ href: null, title: t('layout.reportIssue') }} />
+        <Tabs.Screen name="review" options={{ href: null, title: t('layout.review') }} />
+        <Tabs.Screen name="inspection" options={{ href: null, title: t('layout.inspection') }} />
+        <Tabs.Screen name="map" options={{ href: null, title: t('layout.map'), headerShown: false }} />
+        <Tabs.Screen name="onboarding" options={{ href: null, title: t('layout.welcome'), headerShown: false }} />
+        <Tabs.Screen name="host/index" options={{ href: null, title: t('layout.hostDashboard') }} />
+        <Tabs.Screen name="host/login" options={{ href: null, title: t('layout.hostLogin') }} />
+        <Tabs.Screen name="host/trips" options={{ href: null, title: t('layout.hostTrips') }} />
+        <Tabs.Screen name="host/earnings" options={{ href: null, title: t('layout.hostEarnings') }} />
+        <Tabs.Screen name="host/listings" options={{ href: null, title: t('layout.hostListings') }} />
       </Tabs>
     </ErrorBoundary>
   );

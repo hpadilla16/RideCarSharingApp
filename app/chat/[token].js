@@ -7,11 +7,13 @@ import { API_BASE } from '../../lib/config';
 import { logWarn } from '../../lib/logger';
 import { fmtDateTime } from '../../lib/format';
 import { colors, spacing, fontSize } from '../../lib/theme';
+import { useTranslation } from 'react-i18next';
 
 // Fallback polling cadence when the SSE stream is unavailable.
 const POLL_INTERVAL = 15000;
 
 export default function TripChatScreen() {
+  const { t } = useTranslation();
   const { token } = useLocalSearchParams();
   const [room, setRoom] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -34,7 +36,7 @@ export default function TripChatScreen() {
       setRoom(data);
       setError('');
     } catch (err) {
-      setError(err?.message || 'Unable to load chat');
+      setError(err?.message || t('chat.unableToLoad'));
     } finally {
       setLoading(false);
     }
@@ -107,7 +109,7 @@ export default function TripChatScreen() {
       setRoom((r) => r ? { ...r, messages: [...(r.messages || []), msg] } : r);
       setNewMsg('');
     } catch (err) {
-      setError(err?.message || 'Unable to send');
+      setError(err?.message || t('chat.unableToSend'));
     } finally {
       setSending(false);
     }
@@ -117,7 +119,7 @@ export default function TripChatScreen() {
     try {
       const msg = await api(`${chatPath}/action`, { method: 'POST', body: JSON.stringify({ action }) });
       setRoom((r) => r ? { ...r, messages: [...(r.messages || []), msg] } : r);
-    } catch (err) { setError(err?.message || 'Unable to send'); }
+    } catch (err) { setError(err?.message || t('chat.unableToSend')); }
   }
 
   async function savePickup() {
@@ -125,20 +127,20 @@ export default function TripChatScreen() {
       await api(`${chatPath}/pickup`, { method: 'PATCH', body: JSON.stringify(pickupForm) });
       setShowPickup(false);
       loadRoom();
-    } catch (err) { setError(err?.message || 'Unable to update'); }
+    } catch (err) { setError(err?.message || t('chat.unableToUpdate')); }
   }
 
   async function submitReport() {
-    if (!reportForm.description.trim()) { setReportMsg('Describe the issue'); return; }
+    if (!reportForm.description.trim()) { setReportMsg(t('chat.describeIssue')); return; }
     try {
       const result = await api(`${chatPath}/report-issue`, { method: 'POST', body: JSON.stringify(reportForm) });
-      setReportMsg(`Ticket #${result.ticketRef} created`);
+      setReportMsg(t('chat.ticketCreated', { ticketRef: result.ticketRef }));
       setShowReport(false);
       loadRoom();
-    } catch (err) { setReportMsg(err?.message || 'Failed'); }
+    } catch (err) { setReportMsg(err?.message || t('chat.failed')); }
   }
 
-  if (loading) return <View style={styles.center}><Text style={styles.muted}>Loading chat...</Text></View>;
+  if (loading) return <View style={styles.center}><Text style={styles.muted}>{t('chat.loadingChat')}</Text></View>;
   if (error && !room) return <View style={styles.center}><Text style={styles.error}>{error}</Text></View>;
   if (!room) return null;
 
@@ -150,8 +152,8 @@ export default function TripChatScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerTitle}>{room.tripCode || 'Trip Chat'}</Text>
-          <Text style={styles.headerSub}>with {otherName}{isHost ? ' (guest)' : ' (host)'}</Text>
+          <Text style={styles.headerTitle}>{room.tripCode || t('chat.tripChat')}</Text>
+          <Text style={styles.headerSub}>{isHost ? t('chat.withGuest', { name: otherName }) : t('chat.withHost', { name: otherName })}</Text>
         </View>
         <View style={[styles.statusBadge, { backgroundColor: room.tripStatus === 'CONFIRMED' ? '#0fb0d822' : room.tripStatus === 'IN_PROGRESS' ? '#10b98122' : '#6b7a9a22' }]}>
           <Text style={styles.statusText}>{(room.tripStatus || '').replace(/_/g, ' ')}</Text>
@@ -161,7 +163,7 @@ export default function TripChatScreen() {
       {/* Pickup details */}
       {(room.pickupAddress || room.pickupInstructions) && (
         <View style={styles.pickupCard}>
-          <Text style={styles.pickupTitle}>📍 Pickup Details</Text>
+          <Text style={styles.pickupTitle}>{t('chat.pickupDetails')}</Text>
           {room.pickupAddress && <Text style={styles.pickupText}>{room.pickupAddress}</Text>}
           {room.pickupInstructions && <Text style={[styles.pickupText, { color: colors.muted }]}>{room.pickupInstructions}</Text>}
         </View>
@@ -171,18 +173,18 @@ export default function TripChatScreen() {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.hotRow} contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.sm }}>
         {!isHost && (
           <>
-            <TouchableOpacity style={styles.hotBtn} onPress={() => sendHotAction('ARRIVED_PICKUP')} accessibilityRole="button" accessibilityLabel="Arrived Pickup"><Text style={styles.hotText}>📍 At pickup</Text></TouchableOpacity>
-            <TouchableOpacity style={styles.hotBtn} onPress={() => sendHotAction('ARRIVED_RETURN')} accessibilityRole="button" accessibilityLabel="Arrived Return"><Text style={styles.hotText}>📍 At return</Text></TouchableOpacity>
-            <TouchableOpacity style={styles.hotBtn} onPress={() => sendHotAction('RUNNING_LATE')} accessibilityRole="button" accessibilityLabel="Running Late"><Text style={styles.hotText}>⏰ Late</Text></TouchableOpacity>
-            <TouchableOpacity style={styles.hotBtn} onPress={() => sendHotAction('NEED_HELP')} accessibilityRole="button" accessibilityLabel="Need Help"><Text style={styles.hotText}>🆘 Help</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.hotBtn} onPress={() => sendHotAction('ARRIVED_PICKUP')} accessibilityRole="button" accessibilityLabel={t('chat.arrivedPickupA11y')}><Text style={styles.hotText}>{t('chat.atPickup')}</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.hotBtn} onPress={() => sendHotAction('ARRIVED_RETURN')} accessibilityRole="button" accessibilityLabel={t('chat.arrivedReturnA11y')}><Text style={styles.hotText}>{t('chat.atReturn')}</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.hotBtn} onPress={() => sendHotAction('RUNNING_LATE')} accessibilityRole="button" accessibilityLabel={t('chat.runningLateA11y')}><Text style={styles.hotText}>{t('chat.late')}</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.hotBtn} onPress={() => sendHotAction('NEED_HELP')} accessibilityRole="button" accessibilityLabel={t('chat.needHelpA11y')}><Text style={styles.hotText}>{t('chat.help')}</Text></TouchableOpacity>
           </>
         )}
         {isHost && (
           <>
-            <TouchableOpacity style={styles.hotBtn} onPress={() => sendHotAction('VEHICLE_READY')} accessibilityRole="button" accessibilityLabel="Vehicle Ready"><Text style={styles.hotText}>✅ Ready</Text></TouchableOpacity>
-            <TouchableOpacity style={styles.hotBtn} onPress={() => sendHotAction('VEHICLE_INSPECTED')} accessibilityRole="button" accessibilityLabel="Vehicle Inspected"><Text style={styles.hotText}>🔍 Inspected</Text></TouchableOpacity>
-            <TouchableOpacity style={[styles.hotBtn, { borderColor: colors.brand }]} onPress={() => setShowPickup(true)}><Text style={[styles.hotText, { color: colors.brand }]}>📍 Pickup</Text></TouchableOpacity>
-            <TouchableOpacity style={[styles.hotBtn, { borderColor: '#ef4444' }]} onPress={() => setShowReport(true)}><Text style={[styles.hotText, { color: '#ef4444' }]}>🎫 Issue</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.hotBtn} onPress={() => sendHotAction('VEHICLE_READY')} accessibilityRole="button" accessibilityLabel={t('chat.vehicleReadyA11y')}><Text style={styles.hotText}>{t('chat.ready')}</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.hotBtn} onPress={() => sendHotAction('VEHICLE_INSPECTED')} accessibilityRole="button" accessibilityLabel={t('chat.vehicleInspectedA11y')}><Text style={styles.hotText}>{t('chat.inspected')}</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.hotBtn, { borderColor: colors.brand }]} onPress={() => setShowPickup(true)}><Text style={[styles.hotText, { color: colors.brand }]}>{t('chat.pickupBtn')}</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.hotBtn, { borderColor: '#ef4444' }]} onPress={() => setShowReport(true)}><Text style={[styles.hotText, { color: '#ef4444' }]}>{t('chat.issueBtn')}</Text></TouchableOpacity>
           </>
         )}
       </ScrollView>
@@ -190,11 +192,11 @@ export default function TripChatScreen() {
       {/* Pickup form (host) */}
       {showPickup && (
         <View style={styles.formCard}>
-          <TextInput style={styles.input} accessibilityLabel="Pickup address" placeholder="Pickup address" value={pickupForm.address} onChangeText={(v) => setPickupForm((f) => ({ ...f, address: v }))} />
-          <TextInput style={styles.input} accessibilityLabel="Instructions for guest" placeholder="Instructions for guest" value={pickupForm.instructions} onChangeText={(v) => setPickupForm((f) => ({ ...f, instructions: v }))} multiline />
+          <TextInput style={styles.input} accessibilityLabel={t('chat.pickupAddress')} placeholder={t('chat.pickupAddress')} value={pickupForm.address} onChangeText={(v) => setPickupForm((f) => ({ ...f, address: v }))} />
+          <TextInput style={styles.input} accessibilityLabel={t('chat.instructionsForGuest')} placeholder={t('chat.instructionsForGuest')} value={pickupForm.instructions} onChangeText={(v) => setPickupForm((f) => ({ ...f, instructions: v }))} multiline />
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <TouchableOpacity style={styles.formBtn} onPress={savePickup} accessibilityRole="button"><Text style={styles.formBtnText}>Save</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => setShowPickup(false)} accessibilityRole="button" accessibilityLabel="Cancel pickup details"><Text style={{ color: colors.muted, padding: spacing.sm }}>Cancel</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.formBtn} onPress={savePickup} accessibilityRole="button"><Text style={styles.formBtnText}>{t('common.save')}</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowPickup(false)} accessibilityRole="button" accessibilityLabel={t('chat.cancelPickupA11y')}><Text style={{ color: colors.muted, padding: spacing.sm }}>{t('common.cancel')}</Text></TouchableOpacity>
           </View>
         </View>
       )}
@@ -202,12 +204,12 @@ export default function TripChatScreen() {
       {/* Report form (host) */}
       {showReport && (
         <View style={styles.formCard}>
-          <Text style={{ fontWeight: '700', color: colors.error, marginBottom: spacing.sm }}>Report Issue</Text>
-          <TextInput style={styles.input} accessibilityLabel="Describe the issue" placeholder="Describe the issue..." value={reportForm.description} onChangeText={(v) => setReportForm((f) => ({ ...f, description: v }))} multiline numberOfLines={3} />
+          <Text style={{ fontWeight: '700', color: colors.error, marginBottom: spacing.sm }}>{t('chat.reportIssue')}</Text>
+          <TextInput style={styles.input} accessibilityLabel={t('chat.describeIssue')} placeholder={t('chat.describeIssuePlaceholder')} value={reportForm.description} onChangeText={(v) => setReportForm((f) => ({ ...f, description: v }))} multiline numberOfLines={3} />
           {reportMsg ? <Text style={{ color: reportMsg.includes('#') ? colors.success : colors.error, fontSize: fontSize.sm }}>{reportMsg}</Text> : null}
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <TouchableOpacity style={[styles.formBtn, { backgroundColor: colors.error }]} onPress={submitReport} accessibilityRole="button"><Text style={styles.formBtnText}>Submit</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => { setShowReport(false); setReportMsg(''); }} accessibilityRole="button" accessibilityLabel="Cancel report"><Text style={{ color: colors.muted, padding: spacing.sm }}>Cancel</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.formBtn, { backgroundColor: colors.error }]} onPress={submitReport} accessibilityRole="button"><Text style={styles.formBtnText}>{t('common.submit')}</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => { setShowReport(false); setReportMsg(''); }} accessibilityRole="button" accessibilityLabel={t('chat.cancelReportA11y')}><Text style={{ color: colors.muted, padding: spacing.sm }}>{t('common.cancel')}</Text></TouchableOpacity>
           </View>
         </View>
       )}
@@ -232,13 +234,13 @@ export default function TripChatScreen() {
       {/* Compose */}
       {!room.closedAt ? (
         <View style={styles.compose}>
-          <TextInput style={styles.composeInput} value={newMsg} onChangeText={setNewMsg} placeholder="Message..." placeholderTextColor={colors.muted} maxLength={5000} accessibilityLabel="Message" />
-          <TouchableOpacity style={styles.sendBtn} onPress={sendMessage} disabled={sending || !newMsg.trim()} accessibilityRole="button" accessibilityLabel="Send message">
+          <TextInput style={styles.composeInput} value={newMsg} onChangeText={setNewMsg} placeholder={t('chat.messagePlaceholder')} placeholderTextColor={colors.muted} maxLength={5000} accessibilityLabel={t('chat.messageA11y')} />
+          <TouchableOpacity style={styles.sendBtn} onPress={sendMessage} disabled={sending || !newMsg.trim()} accessibilityRole="button" accessibilityLabel={t('chat.sendMessageA11y')}>
             <Text style={styles.sendBtnText}>{sending ? '...' : '→'}</Text>
           </TouchableOpacity>
         </View>
       ) : (
-        <View style={styles.closed}><Text style={styles.muted}>Chat closed</Text></View>
+        <View style={styles.closed}><Text style={styles.muted}>{t('chat.chatClosed')}</Text></View>
       )}
     </KeyboardAvoidingView>
   );

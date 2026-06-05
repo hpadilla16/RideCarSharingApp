@@ -4,8 +4,10 @@ import { useRouter } from 'expo-router';
 import { hostApi, readHostSession, clearHostSession } from '../../lib/hostApi';
 import { fmtMoney } from '../../lib/format';
 import { colors, spacing, fontSize } from '../../lib/theme';
+import { useTranslation } from 'react-i18next';
 
 export default function HostDashboard() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [dashboard, setDashboard] = useState(null);
   const [user, setUser] = useState(null);
@@ -43,10 +45,10 @@ export default function HostDashboard() {
     <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.lg, paddingBottom: 60 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg }}>
         <View>
-          <Text style={styles.title}>{profile?.displayName || user?.fullName || 'Host'}</Text>
+          <Text style={styles.title}>{profile?.displayName || user?.fullName || t('hostDashboard.host')}</Text>
           <Text style={{ color: colors.muted, fontSize: fontSize.sm }}>{profile?.email || ''}</Text>
         </View>
-        <TouchableOpacity onPress={handleLogout} accessibilityRole="button"><Text style={{ color: colors.error, fontWeight: '600' }}>Logout</Text></TouchableOpacity>
+        <TouchableOpacity onPress={handleLogout} accessibilityRole="button"><Text style={{ color: colors.error, fontWeight: '600' }}>{t('common.signOut')}</Text></TouchableOpacity>
       </View>
 
       {error ? <Text style={{ color: colors.error, marginBottom: spacing.md }}>{error}</Text> : null}
@@ -54,10 +56,10 @@ export default function HostDashboard() {
       {/* Metrics */}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.lg }}>
         {[
-          { label: 'Listings', value: metrics.publishedListings ?? listings.length },
-          { label: 'Trips', value: metrics.totalTrips ?? trips.length },
-          { label: 'Active', value: metrics.activeTrips ?? 0 },
-          { label: 'Rating', value: profile?.averageRating ? Number(profile.averageRating).toFixed(1) : '—' },
+          { label: t('hostDashboard.listings'), value: metrics.publishedListings ?? listings.length },
+          { label: t('hostDashboard.trips'), value: metrics.totalTrips ?? trips.length },
+          { label: t('hostDashboard.active'), value: metrics.activeTrips ?? 0 },
+          { label: t('hostDashboard.rating'), value: profile?.averageRating ? Number(profile.averageRating).toFixed(1) : '—' },
         ].map((m) => (
           <View key={m.label} style={styles.metricCard}>
             <Text style={styles.metricValue}>{m.value}</Text>
@@ -68,23 +70,23 @@ export default function HostDashboard() {
 
       {/* Quick Nav */}
       <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg, flexWrap: 'wrap' }}>
-        <TouchableOpacity style={styles.navBtn} onPress={() => router.push('/host/listings')} accessibilityRole="button"><Text style={styles.navBtnText}>My Listings</Text></TouchableOpacity>
-        <TouchableOpacity style={styles.navBtn} onPress={() => router.push('/host/trips')} accessibilityRole="button"><Text style={styles.navBtnText}>Trips</Text></TouchableOpacity>
-        <TouchableOpacity style={styles.navBtn} onPress={() => router.push('/host/earnings')} accessibilityRole="button"><Text style={styles.navBtnText}>Earnings</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.navBtn} onPress={() => router.push('/host/listings')} accessibilityRole="button"><Text style={styles.navBtnText}>{t('hostDashboard.myListings')}</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.navBtn} onPress={() => router.push('/host/trips')} accessibilityRole="button"><Text style={styles.navBtnText}>{t('hostDashboard.trips')}</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.navBtn} onPress={() => router.push('/host/earnings')} accessibilityRole="button"><Text style={styles.navBtnText}>{t('hostDashboard.earnings')}</Text></TouchableOpacity>
       </View>
 
       {/* Recent Listings */}
-      <Text style={styles.sectionTitle}>Your Listings</Text>
+      <Text style={styles.sectionTitle}>{t('hostDashboard.yourListings')}</Text>
       {listings.slice(0, 4).map((l) => (
         <View key={l.id} style={styles.card}>
-          <Text style={{ fontWeight: '700', color: colors.ink }}>{l.title || 'Untitled'}</Text>
+          <Text style={{ fontWeight: '700', color: colors.ink }}>{l.title || t('hostDashboard.untitled')}</Text>
           <Text style={{ fontSize: fontSize.xs, color: colors.muted }}>{l.vehicle ? `${l.vehicle.year} ${l.vehicle.make} ${l.vehicle.model}` : ''}{l.baseDailyRate ? ` · ${fmtMoney(l.baseDailyRate)}/day` : ''}</Text>
         </View>
       ))}
-      {!listings.length && <Text style={{ color: colors.muted }}>No listings yet</Text>}
+      {!listings.length && <Text style={{ color: colors.muted }}>{t('hostDashboard.noListingsYet')}</Text>}
 
       {/* Recent Trips */}
-      <Text style={[styles.sectionTitle, { marginTop: spacing.lg }]}>Recent Trips</Text>
+      <Text style={[styles.sectionTitle, { marginTop: spacing.lg }]}>{t('hostDashboard.recentTrips')}</Text>
       {trips.slice(0, 5).map((t) => (
         <View key={t.id} style={styles.card}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -93,7 +95,7 @@ export default function HostDashboard() {
           </View>
         </View>
       ))}
-      {!trips.length && <Text style={{ color: colors.muted }}>No trips yet</Text>}
+      {!trips.length && <Text style={{ color: colors.muted }}>{t('hostDashboard.noTripsYet')}</Text>}
     </ScrollView>
   );
 }

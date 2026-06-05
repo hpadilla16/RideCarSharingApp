@@ -7,6 +7,7 @@ import { api } from '../lib/api';
 import { fmtMoney, vehicleLabel } from '../lib/format';
 import { colors, spacing, fontSize } from '../lib/theme';
 import { logError, logWarn } from '../lib/logger';
+import { useTranslation } from 'react-i18next';
 
 const { width, height } = Dimensions.get('window');
 
@@ -18,6 +19,7 @@ const DEFAULT_REGION = {
 };
 
 export default function MapScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [region, setRegion] = useState(DEFAULT_REGION);
   const [listings, setListings] = useState([]);
@@ -81,9 +83,9 @@ export default function MapScreen() {
             <Callout onPress={() => router.push(`/listing/${listing.id}`)}>
               <View style={styles.callout}>
                 <Text style={styles.calloutTitle} numberOfLines={1}>{listing.title || vehicleLabel(listing)}</Text>
-                <Text style={styles.calloutPrice}>{fmtMoney(listing.baseDailyRate)}/day</Text>
-                {listing.instantBook && <Text style={styles.calloutBadge}>⚡ Instant Book</Text>}
-                <Text style={styles.calloutCta}>Tap to view →</Text>
+                <Text style={styles.calloutPrice}>{fmtMoney(listing.baseDailyRate)}{t('common.perDay')}</Text>
+                {listing.instantBook && <Text style={styles.calloutBadge}>{t('map.instantBook')}</Text>}
+                <Text style={styles.calloutCta}>{t('map.tapToView')}</Text>
               </View>
             </Callout>
           </Marker>
@@ -92,9 +94,9 @@ export default function MapScreen() {
 
       {/* Bottom card: count */}
       <View style={styles.bottomCard}>
-        <Text style={styles.bottomText}>{listings.length} cars near you</Text>
-        <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Switch to list view">
-          <Text style={styles.bottomLink}>List view</Text>
+        <Text style={styles.bottomText}>{t('map.carsNearYou', { count: listings.length })}</Text>
+        <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={t('map.listViewA11y')}>
+          <Text style={styles.bottomLink}>{t('map.listView')}</Text>
         </TouchableOpacity>
       </View>
     </View>

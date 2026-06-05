@@ -5,8 +5,11 @@ import { hostApi, readHostSession } from '../../lib/hostApi';
 import { fmtMoney, fmtDateTime } from '../../lib/format';
 import { colors, spacing, fontSize } from '../../lib/theme';
 import { logError } from '../../lib/logger';
+import { useTranslation } from 'react-i18next';
 
 export default function HostTripsScreen() {
+  const { t: i18nT } = useTranslation();
+  const t = i18nT;
   const router = useRouter();
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,7 +24,7 @@ export default function HostTripsScreen() {
         setTrips(data?.trips || []);
       } catch (err) {
         logError(err, { screen: 'host/trips' });
-        setMsg('Unable to load trips. Try again later.');
+        setMsg(t('hostTrips.unableToLoad'));
       } finally { setLoading(false); }
     })();
   }, []);
@@ -29,7 +32,7 @@ export default function HostTripsScreen() {
   async function updateStatus(tripId, status) {
     try {
       await hostApi(`/trips/${tripId}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
-      setMsg(`Trip ${status.toLowerCase()}`);
+      setMsg(status === 'CONFIRMED' ? t('hostTrips.tripConfirmed') : t('hostTrips.tripCancelled'));
       const data = await hostApi('/dashboard');
       setTrips(data?.trips || []);
     } catch (err) { setMsg(err.message); }
@@ -37,8 +40,8 @@ export default function HostTripsScreen() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: spacing.lg, paddingBottom: 60 }}>
-      <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back to dashboard"><Text style={{ color: colors.brand, fontWeight: '600', marginBottom: spacing.md }}>← Dashboard</Text></TouchableOpacity>
-      <Text style={{ fontSize: fontSize.xl, fontWeight: '800', color: colors.ink, marginBottom: spacing.lg }}>My Trips</Text>
+      <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={t('hostTrips.backToDashboardA11y')}><Text style={{ color: colors.brand, fontWeight: '600', marginBottom: spacing.md }}>{t('hostTrips.backToDashboard')}</Text></TouchableOpacity>
+      <Text style={{ fontSize: fontSize.xl, fontWeight: '800', color: colors.ink, marginBottom: spacing.lg }}>{t('hostTrips.title')}</Text>
       {msg ? <Text style={{ color: colors.muted, marginBottom: spacing.md }}>{msg}</Text> : null}
       {trips.map((t) => (
         <View key={t.id} style={styles.card}>
@@ -49,17 +52,17 @@ export default function HostTripsScreen() {
           <Text style={{ fontSize: fontSize.xs, color: colors.muted, marginTop: 2 }}>
             {t.guest ? `${t.guest.firstName || ''} ${t.guest.lastName || ''}` : ''}{t.listing?.title ? ` · ${t.listing.title}` : ''}
           </Text>
-          {t.scheduledPickupAt && <Text style={{ fontSize: fontSize.xs, color: colors.muted }}>Pickup: {fmtDateTime(t.scheduledPickupAt)}</Text>}
+          {t.scheduledPickupAt && <Text style={{ fontSize: fontSize.xs, color: colors.muted }}>{i18nT('hostTrips.pickupAt', { date: fmtDateTime(t.scheduledPickupAt) })}</Text>}
           {t.totalPrice != null && <Text style={{ fontWeight: '700', color: colors.brand, marginTop: 4 }}>{fmtMoney(t.totalPrice)}</Text>}
           {t.status === 'PENDING_APPROVAL' && (
             <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
-              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: 'rgba(80,200,120,.15)' }]} onPress={() => updateStatus(t.id, 'CONFIRMED')} accessibilityRole="button" accessibilityLabel={`Approve trip ${t.tripCode || ''}`}><Text style={{ color: colors.success, fontWeight: '700', fontSize: fontSize.xs }}>Approve</Text></TouchableOpacity>
-              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: 'rgba(255,80,80,.1)' }]} onPress={() => updateStatus(t.id, 'CANCELLED')} accessibilityRole="button" accessibilityLabel={`Decline trip ${t.tripCode || ''}`}><Text style={{ color: colors.error, fontWeight: '700', fontSize: fontSize.xs }}>Decline</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: 'rgba(80,200,120,.15)' }]} onPress={() => updateStatus(t.id, 'CONFIRMED')} accessibilityRole="button" accessibilityLabel={i18nT('hostTrips.approveA11y', { tripCode: t.tripCode || '' })}><Text style={{ color: colors.success, fontWeight: '700', fontSize: fontSize.xs }}>{i18nT('hostTrips.approve')}</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: 'rgba(255,80,80,.1)' }]} onPress={() => updateStatus(t.id, 'CANCELLED')} accessibilityRole="button" accessibilityLabel={i18nT('hostTrips.declineA11y', { tripCode: t.tripCode || '' })}><Text style={{ color: colors.error, fontWeight: '700', fontSize: fontSize.xs }}>{i18nT('hostTrips.decline')}</Text></TouchableOpacity>
             </View>
           )}
         </View>
       ))}
-      {!loading && !trips.length && <Text style={{ color: colors.muted }}>No trips yet.</Text>}
+      {!loading && !trips.length && <Text style={{ color: colors.muted }}>{t('hostTrips.noTripsYet')}</Text>}
     </ScrollView>
   );
 }

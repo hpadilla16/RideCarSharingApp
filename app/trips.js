@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { api, readGuestSession } from '../lib/api';
 import { fmtMoney, fmtDateTime } from '../lib/format';
 import { colors, spacing, fontSize } from '../lib/theme';
+import { useTranslation } from 'react-i18next';
 
 const STATUS_COLORS = {
   CONFIRMED: '#0fb0d8',
@@ -15,6 +16,7 @@ const STATUS_COLORS = {
 };
 
 export default function TripsScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +39,7 @@ export default function TripsScreen() {
         });
         setBookings(data?.bookings || []);
       } catch (err) {
-        setError(err?.message || 'Unable to load trips');
+        setError(err?.message || t('trips.unableToLoad'));
       } finally {
         setLoading(false);
       }
@@ -49,10 +51,10 @@ export default function TripsScreen() {
   if (!loggedIn) {
     return (
       <View style={styles.center}>
-        <Text style={styles.emptyTitle}>Sign in to see your trips</Text>
-        <Text style={styles.emptyText}>Your bookings will appear here after you sign in.</Text>
+        <Text style={styles.emptyTitle}>{t('trips.signInTitle')}</Text>
+        <Text style={styles.emptyText}>{t('trips.signInBody')}</Text>
         <TouchableOpacity style={styles.signInBtn} onPress={() => router.push('/login')} accessibilityRole="button">
-          <Text style={styles.signInBtnText}>Sign In</Text>
+          <Text style={styles.signInBtnText}>{t('common.signIn')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -61,9 +63,9 @@ export default function TripsScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
       <View style={{ padding: spacing.lg }}>
-        <Text style={styles.title}>My Trips</Text>
+        <Text style={styles.title}>{t('trips.title')}</Text>
         {error ? <Text style={styles.error}>{error}</Text> : null}
-        {bookings.length === 0 && !error && <Text style={styles.emptyText}>No trips yet.</Text>}
+        {bookings.length === 0 && !error && <Text style={styles.emptyText}>{t('trips.noTripsYet')}</Text>}
         {bookings.map((b, idx) => (
           <View key={b.id || idx} style={styles.card}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -74,14 +76,14 @@ export default function TripsScreen() {
                 </Text>
               </View>
             </View>
-            <Text style={styles.cardVehicle}>{b.vehicleLabel || 'Vehicle'}</Text>
+            <Text style={styles.cardVehicle}>{b.vehicleLabel || t('trips.vehicle')}</Text>
             <View style={{ flexDirection: 'row', gap: spacing.lg, marginTop: spacing.sm }}>
               <View>
-                <Text style={styles.label}>Pickup</Text>
+                <Text style={styles.label}>{t('trips.pickup')}</Text>
                 <Text style={styles.cardDate}>{fmtDateTime(b.pickupAt)}</Text>
               </View>
               <View>
-                <Text style={styles.label}>Return</Text>
+                <Text style={styles.label}>{t('trips.return')}</Text>
                 <Text style={styles.cardDate}>{fmtDateTime(b.returnAt)}</Text>
               </View>
             </View>
