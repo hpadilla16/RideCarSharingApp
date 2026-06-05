@@ -25,6 +25,8 @@ interface Booking {
   pickupAt?: string;
   returnAt?: string;
   estimatedTotal?: number | string | null;
+  agreementToken?: string | null;
+  agreementSignedAt?: string | null;
   conversation?: { guestToken?: string } | null;
   [key: string]: unknown;
 }
@@ -93,7 +95,14 @@ export default function TripsScreen() {
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {bookings.length === 0 && !error && <Text style={styles.emptyText}>{t('trips.noTripsYet')}</Text>}
         {bookings.map((b, idx) => (
-          <View key={b.id || idx} style={styles.card}>
+          <TouchableOpacity
+            key={b.id || idx}
+            style={styles.card}
+            onPress={() => router.push(`/trip/${b.reference || b.reservationNumber || b.tripCode}`)}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={t('trips.viewTripA11y', { reference: b.reference || b.reservationNumber || b.tripCode })}
+          >
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <Text style={styles.cardRef}>{b.reference || b.reservationNumber || b.tripCode}</Text>
               <View style={[styles.statusBadge, { backgroundColor: (STATUS_COLORS[b.status || ''] || colors.muted) + '22' }]}>
@@ -133,9 +142,14 @@ export default function TripsScreen() {
                     <Text style={styles.actionText}>{t('trips.inspection')}</Text>
                   </TouchableOpacity>
                 )}
+                {b.agreementToken && !b.agreementSignedAt && (
+                  <TouchableOpacity style={styles.actionBtn} onPress={() => router.push({ pathname: '/agreement', params: { token: b.agreementToken } })} accessibilityRole="button" accessibilityLabel={t('trips.signAgreementA11y')}>
+                    <Text style={styles.actionText}>{t('trips.signAgreement')}</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             )}
-          </View>
+          </TouchableOpacity>
         ))}
       </View>
     </ScrollView>

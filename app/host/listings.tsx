@@ -151,6 +151,7 @@ export default function HostListingsScreen() {
 
               <View style={{ flexDirection: 'row', gap: spacing.sm }}>
                 <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={saveEdit} disabled={saving} accessibilityRole="button" accessibilityLabel={t('hostListings.saveA11y')}><Text style={{ color: colors.white, fontWeight: '700' }}>{saving ? t('hostListings.saving') : t('common.save')}</Text></TouchableOpacity>
+                <TouchableOpacity style={styles.calendarBtn} onPress={() => router.push({ pathname: '/host/availability', params: { listingId: editId, title: editForm.title } })} accessibilityRole="button" accessibilityLabel={t('hostListings.calendarA11y')}><Text style={{ color: colors.brand, fontWeight: '600' }}>{t('hostListings.calendar')}</Text></TouchableOpacity>
                 <TouchableOpacity onPress={() => setEditId(null)} accessibilityRole="button" accessibilityLabel={t('hostListings.cancelA11y')}><Text style={{ color: colors.muted, padding: spacing.sm }}>{t('common.cancel')}</Text></TouchableOpacity>
               </View>
             </View>
@@ -181,6 +182,7 @@ const styles = StyleSheet.create({
   card: { padding: spacing.md, backgroundColor: colors.card, borderRadius: 12, marginBottom: spacing.sm, elevation: 1 },
   input: { height: 44, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: spacing.sm, backgroundColor: colors.bg },
   saveBtn: { paddingVertical: spacing.sm, paddingHorizontal: spacing.lg, borderRadius: 10, backgroundColor: colors.brand },
+  calendarBtn: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: 10, borderWidth: 1, borderColor: colors.border },
   editBtn: { padding: spacing.sm, borderWidth: 1, borderColor: colors.border, borderRadius: 8 },
   thumb: { width: 56, height: 42, borderRadius: 8 },
   thumbEmpty: { backgroundColor: colors.border, justifyContent: 'center', alignItems: 'center' },

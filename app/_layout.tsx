@@ -81,6 +81,9 @@ export default function AppLayout() {
         <Tabs.Screen name="host/trips" options={{ href: null, title: t('layout.hostTrips') }} />
         <Tabs.Screen name="host/earnings" options={{ href: null, title: t('layout.hostEarnings') }} />
         <Tabs.Screen name="host/listings" options={{ href: null, title: t('layout.hostListings') }} />
+        <Tabs.Screen name="trip/[reference]" options={{ href: null, title: t('layout.tripDetail') }} />
+        <Tabs.Screen name="agreement" options={{ href: null, title: t('layout.agreement') }} />
+        <Tabs.Screen name="host/availability" options={{ href: null, title: t('layout.hostAvailability') }} />
       </Tabs>
     </ErrorBoundary>
   );

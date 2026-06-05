@@ -10,6 +10,25 @@
     "title": "Account",
     "vehicleInspection": "Vehicle Inspection"
   },
+  "agreement": {
+    "alreadySigned": "This agreement was already signed.",
+    "invalidOrExpired": "This agreement link is invalid or has expired.",
+    "legalNote": "By typing your full legal name below, you agree to be bound by the rental agreement terms for this trip. Your typed name serves as your electronic signature.",
+    "missingToken": "No agreement token found.",
+    "nameTooShort": "Please type your full name (at least 3 characters).",
+    "reservation": "Reservation {{number}}",
+    "signatureSection": "Electronic Signature",
+    "signedBy": "Signed by {{name}} on {{date}}.",
+    "signedTitle": "Agreement signed ✓",
+    "signNow": "Sign Agreement",
+    "submitA11y": "Submit signature",
+    "submitting": "Submitting...",
+    "title": "Rental Agreement",
+    "typedNameA11y": "Type your full legal name",
+    "typedNamePlaceholder": "Type your full legal name",
+    "unableToLoad": "Unable to load agreement",
+    "unableToSubmit": "Unable to submit signature"
+  },
   "chat": {
     "arrivedPickupA11y": "Arrived Pickup",
     "arrivedReturnA11y": "Arrived Return",
@@ -182,6 +201,30 @@
     "viewListing": "View listing: {{title}}",
     "viewSavedCar": "View saved car: {{title}}"
   },
+  "hostAvailability": {
+    "backA11y": "Back to listings",
+    "blockDates": "Block dates",
+    "blocked": "Blocked",
+    "delete": "Delete",
+    "deleteA11y": "Delete window from {{start}} to {{end}}",
+    "deleteConfirmBody": "This availability window will be removed.",
+    "deleteConfirmTitle": "Delete window?",
+    "endDateA11y": "End date, {{date}}",
+    "from": "From",
+    "missingListing": "No listing found.",
+    "noteA11y": "Optional note",
+    "notePlaceholder": "Note (optional)",
+    "noWindows": "No availability windows yet.",
+    "saveBlockA11y": "Save blocked dates",
+    "saving": "Saving...",
+    "startDateA11y": "Start date, {{date}}",
+    "title": "Availability",
+    "unableToDelete": "Unable to delete window",
+    "unableToLoad": "Unable to load availability",
+    "unableToSave": "Unable to save blocked dates",
+    "until": "Until",
+    "windows": "Calendar windows"
+  },
   "hostDashboard": {
     "active": "Active",
     "earnings": "Earnings",
@@ -213,6 +256,8 @@
     "addPhotoA11y": "Add photo",
     "backToDashboard": "← Dashboard",
     "backToDashboardA11y": "Back to dashboard",
+    "calendar": "Calendar",
+    "calendarA11y": "Manage availability calendar",
     "cancelA11y": "Cancel editing",
     "dailyRate": "Daily Rate",
     "edit": "Edit",
@@ -313,9 +358,11 @@
   },
   "layout": {
     "account": "Account",
+    "agreement": "Rental Agreement",
     "checkout": "Checkout",
     "documents": "Documents",
     "explore": "Explore",
+    "hostAvailability": "Availability",
     "hostDashboard": "Host Dashboard",
     "hostEarnings": "Host Earnings",
     "hostListings": "Host Listings",
@@ -328,6 +375,7 @@
     "reportIssue": "Report Issue",
     "review": "Review",
     "tripChat": "Trip Chat",
+    "tripDetail": "Trip Detail",
     "trips": "Trips",
     "welcome": "Welcome"
   },
@@ -409,6 +457,23 @@
     "unableToLoad": "Unable to load review",
     "unableToSubmit": "Unable to submit review"
   },
+  "tripDetail": {
+    "actions": "Trip actions",
+    "agreementSigned": "Agreement signed ✓",
+    "cancelA11y": "Cancel this trip",
+    "cancelConfirmBody": "Free cancellation up to 48 hours before pickup. After the free window, fees may apply per the cancellation policy. Do you want to cancel this trip?",
+    "cancelConfirmTitle": "Cancel trip?",
+    "cancelling": "Cancelling...",
+    "cancelTrip": "Cancel Trip",
+    "estimatedTotal": "Estimated total",
+    "host": "Host",
+    "keepTrip": "Keep Trip",
+    "notFound": "Trip not found.",
+    "signInRequired": "Sign in to view this trip.",
+    "tripCode": "Trip code",
+    "unableToCancel": "Unable to cancel trip",
+    "unableToLoad": "Unable to load trip"
+  },
   "trips": {
     "chat": "💬 Chat",
     "chatA11y": "Open trip chat",
@@ -419,10 +484,13 @@
     "noTripsYet": "No trips yet.",
     "pickup": "Pickup",
     "return": "Return",
+    "signAgreement": "✍️ Sign Agreement",
+    "signAgreementA11y": "Sign rental agreement",
     "signInBody": "Your bookings will appear here after you sign in.",
     "signInTitle": "Sign in to see your trips",
     "title": "My Trips",
     "unableToLoad": "Unable to load trips",
-    "vehicle": "Vehicle"
+    "vehicle": "Vehicle",
+    "viewTripA11y": "View trip {{reference}}"
   }
 }

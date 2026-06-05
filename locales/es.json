@@ -10,6 +10,25 @@
     "title": "Cuenta",
     "vehicleInspection": "Inspección del vehículo"
   },
+  "agreement": {
+    "alreadySigned": "Este contrato ya fue firmado.",
+    "invalidOrExpired": "Este enlace del contrato es inválido o expiró.",
+    "legalNote": "Al escribir tu nombre legal completo abajo, aceptas los términos del contrato de alquiler para este viaje. Tu nombre escrito sirve como tu firma electrónica.",
+    "missingToken": "No se encontró el token del contrato.",
+    "nameTooShort": "Escribe tu nombre completo (mínimo 3 caracteres).",
+    "reservation": "Reservación {{number}}",
+    "signatureSection": "Firma electrónica",
+    "signedBy": "Firmado por {{name}} el {{date}}.",
+    "signedTitle": "Contrato firmado ✓",
+    "signNow": "Firmar contrato",
+    "submitA11y": "Enviar firma",
+    "submitting": "Enviando...",
+    "title": "Contrato de alquiler",
+    "typedNameA11y": "Escribe tu nombre legal completo",
+    "typedNamePlaceholder": "Escribe tu nombre legal completo",
+    "unableToLoad": "No se pudo cargar el contrato",
+    "unableToSubmit": "No se pudo enviar la firma"
+  },
   "chat": {
     "arrivedPickupA11y": "Llegué al punto de recogida",
     "arrivedReturnA11y": "Llegué al punto de devolución",
@@ -182,6 +201,30 @@
     "viewListing": "Ver anuncio: {{title}}",
     "viewSavedCar": "Ver carro guardado: {{title}}"
   },
+  "hostAvailability": {
+    "backA11y": "Volver a anuncios",
+    "blockDates": "Bloquear fechas",
+    "blocked": "Bloqueado",
+    "delete": "Eliminar",
+    "deleteA11y": "Eliminar ventana del {{start}} al {{end}}",
+    "deleteConfirmBody": "Esta ventana de disponibilidad se eliminará.",
+    "deleteConfirmTitle": "¿Eliminar ventana?",
+    "endDateA11y": "Fecha final, {{date}}",
+    "from": "Desde",
+    "missingListing": "No se encontró el anuncio.",
+    "noteA11y": "Nota opcional",
+    "notePlaceholder": "Nota (opcional)",
+    "noWindows": "Aún no hay ventanas de disponibilidad.",
+    "saveBlockA11y": "Guardar fechas bloqueadas",
+    "saving": "Guardando...",
+    "startDateA11y": "Fecha inicial, {{date}}",
+    "title": "Disponibilidad",
+    "unableToDelete": "No se pudo eliminar la ventana",
+    "unableToLoad": "No se pudo cargar la disponibilidad",
+    "unableToSave": "No se pudieron guardar las fechas bloqueadas",
+    "until": "Hasta",
+    "windows": "Ventanas del calendario"
+  },
   "hostDashboard": {
     "active": "Activos",
     "earnings": "Ganancias",
@@ -213,6 +256,8 @@
     "addPhotoA11y": "Añadir foto",
     "backToDashboard": "← Panel",
     "backToDashboardA11y": "Volver al panel",
+    "calendar": "Calendario",
+    "calendarA11y": "Manejar calendario de disponibilidad",
     "cancelA11y": "Cancelar edición",
     "dailyRate": "Tarifa diaria",
     "edit": "Editar",
@@ -313,9 +358,11 @@
   },
   "layout": {
     "account": "Cuenta",
+    "agreement": "Contrato de alquiler",
     "checkout": "Pago",
     "documents": "Documentos",
     "explore": "Explorar",
+    "hostAvailability": "Disponibilidad",
     "hostDashboard": "Panel de anfitrión",
     "hostEarnings": "Ganancias de anfitrión",
     "hostListings": "Anuncios de anfitrión",
@@ -328,6 +375,7 @@
     "reportIssue": "Reportar problema",
     "review": "Reseña",
     "tripChat": "Chat del viaje",
+    "tripDetail": "Detalle del viaje",
     "trips": "Viajes",
     "welcome": "Bienvenido"
   },
@@ -409,6 +457,23 @@
     "unableToLoad": "No se pudo cargar la reseña",
     "unableToSubmit": "No se pudo enviar la reseña"
   },
+  "tripDetail": {
+    "actions": "Acciones del viaje",
+    "agreementSigned": "Contrato firmado ✓",
+    "cancelA11y": "Cancelar este viaje",
+    "cancelConfirmBody": "Cancelación gratis hasta 48 horas antes de la recogida. Después de la ventana gratis, pueden aplicar cargos según la política de cancelación. ¿Quieres cancelar este viaje?",
+    "cancelConfirmTitle": "¿Cancelar viaje?",
+    "cancelling": "Cancelando...",
+    "cancelTrip": "Cancelar viaje",
+    "estimatedTotal": "Total estimado",
+    "host": "Anfitrión",
+    "keepTrip": "Mantener viaje",
+    "notFound": "No se encontró el viaje.",
+    "signInRequired": "Inicia sesión para ver este viaje.",
+    "tripCode": "Código del viaje",
+    "unableToCancel": "No se pudo cancelar el viaje",
+    "unableToLoad": "No se pudo cargar el viaje"
+  },
   "trips": {
     "chat": "💬 Chat",
     "chatA11y": "Abrir chat del viaje",
@@ -419,10 +484,13 @@
     "noTripsYet": "Aún no hay viajes.",
     "pickup": "Recogida",
     "return": "Devolución",
+    "signAgreement": "✍️ Firmar contrato",
+    "signAgreementA11y": "Firmar contrato de alquiler",
     "signInBody": "Tus reservas aparecerán aquí cuando inicies sesión.",
     "signInTitle": "Inicia sesión para ver tus viajes",
     "title": "Mis viajes",
     "unableToLoad": "No se pudieron cargar los viajes",
-    "vehicle": "Vehículo"
+    "vehicle": "Vehículo",
+    "viewTripA11y": "Ver viaje {{reference}}"
   }
 }
