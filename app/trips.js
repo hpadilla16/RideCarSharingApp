@@ -51,7 +51,7 @@ export default function TripsScreen() {
       <View style={styles.center}>
         <Text style={styles.emptyTitle}>Sign in to see your trips</Text>
         <Text style={styles.emptyText}>Your bookings will appear here after you sign in.</Text>
-        <TouchableOpacity style={styles.signInBtn} onPress={() => router.push('/login')}>
+        <TouchableOpacity style={styles.signInBtn} onPress={() => router.push('/login')} accessibilityRole="button">
           <Text style={styles.signInBtnText}>Sign In</Text>
         </TouchableOpacity>
       </View>

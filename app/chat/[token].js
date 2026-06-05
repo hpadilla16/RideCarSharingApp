@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import EventSource from 'react-native-sse';
 import { api } from '../../lib/api';
+import { API_BASE } from '../../lib/config';
+import { logWarn } from '../../lib/logger';
 import { fmtDateTime } from '../../lib/format';
 import { colors, spacing, fontSize } from '../../lib/theme';
 
+// Fallback polling cadence when the SSE stream is unavailable.
 const POLL_INTERVAL = 15000;
 
 export default function TripChatScreen() {
@@ -40,10 +44,55 @@ export default function TripChatScreen() {
     if (!token) return;
     loadRoom();
     api(`${chatPath}/read`, { method: 'POST' }).catch(() => {});
-    pollRef.current = setInterval(() => {
-      api(chatPath).then(setRoom).catch(() => {});
-    }, POLL_INTERVAL);
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+
+    // Real-time via the backend's SSE stream; polling only as fallback.
+    const startPolling = () => {
+      if (pollRef.current) return;
+      pollRef.current = setInterval(() => {
+        api(chatPath).then(setRoom).catch(() => {});
+      }, POLL_INTERVAL);
+    };
+    const stopPolling = () => {
+      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    };
+
+    let es = null;
+    try {
+      es = new EventSource(`${API_BASE}${chatPath}/stream`);
+      es.addEventListener('open', () => stopPolling());
+      es.addEventListener('message', (e) => {
+        // Backend broadcasts each new message (excluding the sender's own
+        // role, which already appended locally on send).
+        try {
+          const msg = JSON.parse(e.data);
+          if (msg?.id) {
+            setRoom((r) => {
+              if (!r) return r;
+              const existing = r.messages || [];
+              if (existing.some((m) => m.id === msg.id)) return r;
+              return { ...r, messages: [...existing, msg] };
+            });
+          }
+        } catch {
+          // Malformed event — ignore; polling fallback will reconcile.
+        }
+      });
+      es.addEventListener('error', () => {
+        // Stream dropped (offline, server restart) — fall back to polling.
+        startPolling();
+      });
+    } catch (err) {
+      logWarn('SSE unavailable, falling back to polling: ' + (err?.message || err));
+      startPolling();
+    }
+
+    return () => {
+      stopPolling();
+      if (es) {
+        es.removeAllEventListeners();
+        es.close();
+      }
+    };
   }, [token]);
 
   useEffect(() => {
@@ -122,16 +171,16 @@ export default function TripChatScreen() {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.hotRow} contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.sm }}>
         {!isHost && (
           <>
-            <TouchableOpacity style={styles.hotBtn} onPress={() => sendHotAction('ARRIVED_PICKUP')}><Text style={styles.hotText}>📍 At pickup</Text></TouchableOpacity>
-            <TouchableOpacity style={styles.hotBtn} onPress={() => sendHotAction('ARRIVED_RETURN')}><Text style={styles.hotText}>📍 At return</Text></TouchableOpacity>
-            <TouchableOpacity style={styles.hotBtn} onPress={() => sendHotAction('RUNNING_LATE')}><Text style={styles.hotText}>⏰ Late</Text></TouchableOpacity>
-            <TouchableOpacity style={styles.hotBtn} onPress={() => sendHotAction('NEED_HELP')}><Text style={styles.hotText}>🆘 Help</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.hotBtn} onPress={() => sendHotAction('ARRIVED_PICKUP')} accessibilityRole="button" accessibilityLabel="Arrived Pickup"><Text style={styles.hotText}>📍 At pickup</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.hotBtn} onPress={() => sendHotAction('ARRIVED_RETURN')} accessibilityRole="button" accessibilityLabel="Arrived Return"><Text style={styles.hotText}>📍 At return</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.hotBtn} onPress={() => sendHotAction('RUNNING_LATE')} accessibilityRole="button" accessibilityLabel="Running Late"><Text style={styles.hotText}>⏰ Late</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.hotBtn} onPress={() => sendHotAction('NEED_HELP')} accessibilityRole="button" accessibilityLabel="Need Help"><Text style={styles.hotText}>🆘 Help</Text></TouchableOpacity>
           </>
         )}
         {isHost && (
           <>
-            <TouchableOpacity style={styles.hotBtn} onPress={() => sendHotAction('VEHICLE_READY')}><Text style={styles.hotText}>✅ Ready</Text></TouchableOpacity>
-            <TouchableOpacity style={styles.hotBtn} onPress={() => sendHotAction('VEHICLE_INSPECTED')}><Text style={styles.hotText}>🔍 Inspected</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.hotBtn} onPress={() => sendHotAction('VEHICLE_READY')} accessibilityRole="button" accessibilityLabel="Vehicle Ready"><Text style={styles.hotText}>✅ Ready</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.hotBtn} onPress={() => sendHotAction('VEHICLE_INSPECTED')} accessibilityRole="button" accessibilityLabel="Vehicle Inspected"><Text style={styles.hotText}>🔍 Inspected</Text></TouchableOpacity>
             <TouchableOpacity style={[styles.hotBtn, { borderColor: colors.brand }]} onPress={() => setShowPickup(true)}><Text style={[styles.hotText, { color: colors.brand }]}>📍 Pickup</Text></TouchableOpacity>
             <TouchableOpacity style={[styles.hotBtn, { borderColor: '#ef4444' }]} onPress={() => setShowReport(true)}><Text style={[styles.hotText, { color: '#ef4444' }]}>🎫 Issue</Text></TouchableOpacity>
           </>
@@ -141,11 +190,11 @@ export default function TripChatScreen() {
       {/* Pickup form (host) */}
       {showPickup && (
         <View style={styles.formCard}>
-          <TextInput style={styles.input} placeholder="Pickup address" value={pickupForm.address} onChangeText={(v) => setPickupForm((f) => ({ ...f, address: v }))} />
-          <TextInput style={styles.input} placeholder="Instructions for guest" value={pickupForm.instructions} onChangeText={(v) => setPickupForm((f) => ({ ...f, instructions: v }))} multiline />
+          <TextInput style={styles.input} accessibilityLabel="Pickup address" placeholder="Pickup address" value={pickupForm.address} onChangeText={(v) => setPickupForm((f) => ({ ...f, address: v }))} />
+          <TextInput style={styles.input} accessibilityLabel="Instructions for guest" placeholder="Instructions for guest" value={pickupForm.instructions} onChangeText={(v) => setPickupForm((f) => ({ ...f, instructions: v }))} multiline />
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <TouchableOpacity style={styles.formBtn} onPress={savePickup}><Text style={styles.formBtnText}>Save</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => setShowPickup(false)}><Text style={{ color: colors.muted, padding: spacing.sm }}>Cancel</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.formBtn} onPress={savePickup} accessibilityRole="button"><Text style={styles.formBtnText}>Save</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowPickup(false)} accessibilityRole="button" accessibilityLabel="Cancel pickup details"><Text style={{ color: colors.muted, padding: spacing.sm }}>Cancel</Text></TouchableOpacity>
           </View>
         </View>
       )}
@@ -154,11 +203,11 @@ export default function TripChatScreen() {
       {showReport && (
         <View style={styles.formCard}>
           <Text style={{ fontWeight: '700', color: colors.error, marginBottom: spacing.sm }}>Report Issue</Text>
-          <TextInput style={styles.input} placeholder="Describe the issue..." value={reportForm.description} onChangeText={(v) => setReportForm((f) => ({ ...f, description: v }))} multiline numberOfLines={3} />
+          <TextInput style={styles.input} accessibilityLabel="Describe the issue" placeholder="Describe the issue..." value={reportForm.description} onChangeText={(v) => setReportForm((f) => ({ ...f, description: v }))} multiline numberOfLines={3} />
           {reportMsg ? <Text style={{ color: reportMsg.includes('#') ? colors.success : colors.error, fontSize: fontSize.sm }}>{reportMsg}</Text> : null}
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <TouchableOpacity style={[styles.formBtn, { backgroundColor: colors.error }]} onPress={submitReport}><Text style={styles.formBtnText}>Submit</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => { setShowReport(false); setReportMsg(''); }}><Text style={{ color: colors.muted, padding: spacing.sm }}>Cancel</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.formBtn, { backgroundColor: colors.error }]} onPress={submitReport} accessibilityRole="button"><Text style={styles.formBtnText}>Submit</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => { setShowReport(false); setReportMsg(''); }} accessibilityRole="button" accessibilityLabel="Cancel report"><Text style={{ color: colors.muted, padding: spacing.sm }}>Cancel</Text></TouchableOpacity>
           </View>
         </View>
       )}
@@ -183,8 +232,8 @@ export default function TripChatScreen() {
       {/* Compose */}
       {!room.closedAt ? (
         <View style={styles.compose}>
-          <TextInput style={styles.composeInput} value={newMsg} onChangeText={setNewMsg} placeholder="Message..." placeholderTextColor={colors.muted} maxLength={5000} />
-          <TouchableOpacity style={styles.sendBtn} onPress={sendMessage} disabled={sending || !newMsg.trim()}>
+          <TextInput style={styles.composeInput} value={newMsg} onChangeText={setNewMsg} placeholder="Message..." placeholderTextColor={colors.muted} maxLength={5000} accessibilityLabel="Message" />
+          <TouchableOpacity style={styles.sendBtn} onPress={sendMessage} disabled={sending || !newMsg.trim()} accessibilityRole="button" accessibilityLabel="Send message">
             <Text style={styles.sendBtnText}>{sending ? '...' : '→'}</Text>
           </TouchableOpacity>
         </View>

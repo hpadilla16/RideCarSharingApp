@@ -45,7 +45,7 @@ export default function IssueScreen() {
         <Text style={{ fontSize: 48, marginBottom: spacing.md }}>🎫</Text>
         <Text style={styles.title}>Issue Reported</Text>
         <Text style={styles.subtitle}>Our support team will review your report and follow up via email.</Text>
-        <TouchableOpacity style={styles.btn} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.btn} onPress={() => router.back()} accessibilityRole="button">
           <Text style={styles.btnText}>Done</Text>
         </TouchableOpacity>
       </View>
@@ -61,10 +61,10 @@ export default function IssueScreen() {
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
         <Text style={styles.label}>Booking reference</Text>
-        <TextInput style={styles.input} placeholder="Trip code or reservation number" placeholderTextColor={colors.muted} value={form.reference} onChangeText={(v) => setForm((f) => ({ ...f, reference: v }))} />
+        <TextInput style={styles.input} placeholder="Trip code or reservation number" placeholderTextColor={colors.muted} value={form.reference} onChangeText={(v) => setForm((f) => ({ ...f, reference: v }))} accessibilityLabel="Trip code or reservation number" />
 
         <Text style={styles.label}>Your email</Text>
-        <TextInput style={styles.input} placeholder="you@example.com" placeholderTextColor={colors.muted} value={form.email} onChangeText={(v) => setForm((f) => ({ ...f, email: v }))} keyboardType="email-address" autoCapitalize="none" />
+        <TextInput style={styles.input} placeholder="you@example.com" placeholderTextColor={colors.muted} value={form.email} onChangeText={(v) => setForm((f) => ({ ...f, email: v }))} keyboardType="email-address" autoCapitalize="none" accessibilityLabel="Your email" />
 
         <Text style={styles.label}>Issue type</Text>
         <View style={styles.typeRow}>
@@ -73,6 +73,8 @@ export default function IssueScreen() {
               key={t.id}
               onPress={() => setForm((f) => ({ ...f, type: t.id }))}
               style={[styles.typeBtn, form.type === t.id && styles.typeBtnActive]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: form.type === t.id }}
             >
               <Text style={[styles.typeText, form.type === t.id && styles.typeTextActive]}>{t.label}</Text>
             </TouchableOpacity>
@@ -88,9 +90,10 @@ export default function IssueScreen() {
           onChangeText={(v) => setForm((f) => ({ ...f, description: v }))}
           multiline
           numberOfLines={4}
+          accessibilityLabel="Describe what happened"
         />
 
-        <TouchableOpacity style={styles.btn} onPress={handleSubmit} disabled={submitting}>
+        <TouchableOpacity style={styles.btn} onPress={handleSubmit} disabled={submitting} accessibilityRole="button">
           <Text style={styles.btnText}>{submitting ? 'Submitting...' : 'Submit Report'}</Text>
         </TouchableOpacity>
       </ScrollView>

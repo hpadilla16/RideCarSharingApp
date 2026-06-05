@@ -27,12 +27,12 @@ export default function HostLoginScreen() {
         <Text style={styles.title}>Host Sign In</Text>
         <Text style={styles.subtitle}>Manage your listings, trips, and earnings.</Text>
         {error ? <Text style={styles.error}>{error}</Text> : null}
-        <TextInput style={styles.input} placeholder="Email" placeholderTextColor={colors.muted} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-        <TextInput style={styles.input} placeholder="Password" placeholderTextColor={colors.muted} value={password} onChangeText={setPassword} secureTextEntry />
-        <TouchableOpacity style={styles.btn} onPress={handleLogin} disabled={loading}>
+        <TextInput style={styles.input} placeholder="Email" placeholderTextColor={colors.muted} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" accessibilityLabel="Email" />
+        <TextInput style={styles.input} placeholder="Password" placeholderTextColor={colors.muted} value={password} onChangeText={setPassword} secureTextEntry accessibilityLabel="Password" />
+        <TouchableOpacity style={styles.btn} onPress={handleLogin} disabled={loading} accessibilityRole="button">
           <Text style={styles.btnText}>{loading ? 'Signing in...' : 'Sign In'}</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.back()} style={{ marginTop: spacing.lg }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ marginTop: spacing.lg }} accessibilityRole="button">
           <Text style={{ color: colors.brand, fontWeight: '600' }}>← Back to Guest</Text>
         </TouchableOpacity>
       </View>

@@ -107,7 +107,7 @@ export default function InspectionScreen() {
         <Text style={{ fontSize: 48, marginBottom: spacing.md }}>✅</Text>
         <Text style={styles.title}>Inspection Complete</Text>
         <Text style={styles.subtitle}>{Object.keys(photos).length} photos captured for trip {tripCode || ''}.</Text>
-        <TouchableOpacity style={styles.btn} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.btn} onPress={() => router.back()} accessibilityRole="button">
           <Text style={styles.btnText}>Done</Text>
         </TouchableOpacity>
       </View>
@@ -131,17 +131,17 @@ export default function InspectionScreen() {
             </View>
             {photos[slot.id] ? (
               <View>
-                <Image source={{ uri: photos[slot.id].uri }} style={styles.photo} resizeMode="cover" />
-                <TouchableOpacity onPress={() => setPhotos((p) => { const next = { ...p }; delete next[slot.id]; return next; })}>
+                <Image source={{ uri: photos[slot.id].uri }} style={styles.photo} resizeMode="cover" accessibilityLabel={`Inspection photo: ${slot.label}`} />
+                <TouchableOpacity onPress={() => setPhotos((p) => { const next = { ...p }; delete next[slot.id]; return next; })} accessibilityRole="button" accessibilityLabel={`Retake ${slot.label} photo`}>
                   <Text style={styles.retake}>Retake</Text>
                 </TouchableOpacity>
               </View>
             ) : (
               <View style={styles.photoActions}>
-                <TouchableOpacity style={styles.cameraBtn} onPress={() => takePhoto(slot.id)}>
+                <TouchableOpacity style={styles.cameraBtn} onPress={() => takePhoto(slot.id)} accessibilityRole="button" accessibilityLabel={`Take ${slot.label} photo with camera`}>
                   <Text style={styles.cameraBtnText}>📷 Camera</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.galleryBtn} onPress={() => pickFromGallery(slot.id)}>
+                <TouchableOpacity style={styles.galleryBtn} onPress={() => pickFromGallery(slot.id)} accessibilityRole="button" accessibilityLabel={`Choose ${slot.label} photo from gallery`}>
                   <Text style={styles.galleryBtnText}>🖼 Gallery</Text>
                 </TouchableOpacity>
               </View>
@@ -160,6 +160,7 @@ export default function InspectionScreen() {
         style={[styles.btn, Object.keys(photos).length < 4 && { opacity: 0.5 }]}
         onPress={handleSubmit}
         disabled={submitting}
+        accessibilityRole="button"
       >
         <Text style={styles.btnText}>{submitting ? 'Submitting...' : 'Complete Inspection'}</Text>
       </TouchableOpacity>

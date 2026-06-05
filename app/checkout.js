@@ -7,9 +7,7 @@ import { fmtMoney, vehicleLabel } from '../lib/format';
 import { colors, spacing, fontSize } from '../lib/theme';
 import { PAYMENT_ALLOWED_HOSTS, PAYMENT_SUCCESS_PATH, PAYMENT_CANCEL_PATH } from '../lib/config';
 import { logWarn } from '../lib/logger';
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const PHONE_RE = /^\+?[\d\s().-]{7,17}$/;
+import { validateCustomerInfo } from '../lib/validation';
 
 // Fallbacks if /policies fetch fails — keep in sync with backend
 // car-sharing-commission.js / car-sharing-policies.js.
@@ -128,10 +126,7 @@ export default function CheckoutScreen() {
   const isInfoComplete = customer.firstName.trim() && customer.lastName.trim() && customer.email.trim() && customer.phone.trim();
 
   function validateInfo() {
-    if (!isInfoComplete) return 'Please fill all fields';
-    if (!EMAIL_RE.test(customer.email.trim())) return 'Please enter a valid email address';
-    if (!PHONE_RE.test(customer.phone.trim())) return 'Please enter a valid phone number';
-    return '';
+    return validateCustomerInfo(customer);
   }
 
   function handleContinue() {
@@ -190,7 +185,7 @@ export default function CheckoutScreen() {
       <View style={{ flex: 1, backgroundColor: colors.bg }}>
         <View style={styles.paymentHeader}>
           <Text style={styles.paymentHeaderTitle}>Complete Payment</Text>
-          <TouchableOpacity onPress={() => setStep(3)}>
+          <TouchableOpacity onPress={() => setStep(3)} accessibilityRole="button" accessibilityLabel="Done with payment">
             <Text style={{ color: colors.brand, fontWeight: '700' }}>Done</Text>
           </TouchableOpacity>
         </View>
@@ -238,7 +233,7 @@ export default function CheckoutScreen() {
         <Text style={{ fontSize: 48, marginBottom: spacing.md }}>🎉</Text>
         <Text style={styles.title}>Booking Confirmed!</Text>
         <Text style={styles.subtitle}>Check your email for trip details and next steps.</Text>
-        <TouchableOpacity style={styles.btn} onPress={() => router.replace('/trips')}>
+        <TouchableOpacity style={styles.btn} onPress={() => router.replace('/trips')} accessibilityRole="button">
           <Text style={styles.btnText}>View My Trips</Text>
         </TouchableOpacity>
       </View>
@@ -269,12 +264,12 @@ export default function CheckoutScreen() {
         {step === 1 && (
           <>
             <Text style={styles.sectionTitle}>Your Information</Text>
-            <TextInput style={styles.input} placeholder="First name" placeholderTextColor={colors.muted} value={customer.firstName} onChangeText={(v) => setCustomer((c) => ({ ...c, firstName: v }))} />
-            <TextInput style={styles.input} placeholder="Last name" placeholderTextColor={colors.muted} value={customer.lastName} onChangeText={(v) => setCustomer((c) => ({ ...c, lastName: v }))} />
-            <TextInput style={styles.input} placeholder="Email" placeholderTextColor={colors.muted} value={customer.email} onChangeText={(v) => setCustomer((c) => ({ ...c, email: v }))} keyboardType="email-address" autoCapitalize="none" />
-            <TextInput style={styles.input} placeholder="Phone" placeholderTextColor={colors.muted} value={customer.phone} onChangeText={(v) => setCustomer((c) => ({ ...c, phone: v }))} keyboardType="phone-pad" />
+            <TextInput style={styles.input} placeholder="First name" placeholderTextColor={colors.muted} value={customer.firstName} onChangeText={(v) => setCustomer((c) => ({ ...c, firstName: v }))} accessibilityLabel="First name" />
+            <TextInput style={styles.input} placeholder="Last name" placeholderTextColor={colors.muted} value={customer.lastName} onChangeText={(v) => setCustomer((c) => ({ ...c, lastName: v }))} accessibilityLabel="Last name" />
+            <TextInput style={styles.input} placeholder="Email" placeholderTextColor={colors.muted} value={customer.email} onChangeText={(v) => setCustomer((c) => ({ ...c, email: v }))} keyboardType="email-address" autoCapitalize="none" accessibilityLabel="Email" />
+            <TextInput style={styles.input} placeholder="Phone" placeholderTextColor={colors.muted} value={customer.phone} onChangeText={(v) => setCustomer((c) => ({ ...c, phone: v }))} keyboardType="phone-pad" accessibilityLabel="Phone" />
 
-            <TouchableOpacity style={[styles.btn, !isInfoComplete && styles.btnDisabled]} onPress={handleContinue} disabled={!isInfoComplete}>
+            <TouchableOpacity style={[styles.btn, !isInfoComplete && styles.btnDisabled]} onPress={handleContinue} disabled={!isInfoComplete} accessibilityRole="button">
               <Text style={styles.btnText}>Continue</Text>
             </TouchableOpacity>
           </>
@@ -298,6 +293,9 @@ export default function CheckoutScreen() {
                 key={tier.id}
                 style={[styles.tierCard, protectionTier === tier.id && styles.tierCardActive]}
                 onPress={() => setProtectionTier(tier.id)}
+                accessibilityRole="button"
+                accessibilityLabel={`${tier.label} protection tier, ${tier.price}`}
+                accessibilityState={{ selected: protectionTier === tier.id }}
               >
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
@@ -324,6 +322,9 @@ export default function CheckoutScreen() {
             <TouchableOpacity
               style={[styles.tierCard, declinedProtection && styles.tierCardActive, { borderColor: declinedProtection ? colors.warning : colors.border }]}
               onPress={() => { setDeclinedProtection(!declinedProtection); if (!declinedProtection) setProtectionTier('BASIC'); }}
+              accessibilityRole="button"
+              accessibilityLabel="I have my own insurance"
+              accessibilityState={{ selected: declinedProtection }}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
                 <View style={[styles.tierRadio, declinedProtection && { borderColor: colors.warning, backgroundColor: colors.warning }]} />
@@ -334,6 +335,9 @@ export default function CheckoutScreen() {
                 <TouchableOpacity
                   style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm }}
                   onPress={() => setOwnInsuranceConfirmed(!ownInsuranceConfirmed)}
+                  accessibilityRole="checkbox"
+                  accessibilityLabel="I confirm I carry valid auto insurance and accept full financial responsibility"
+                  accessibilityState={{ checked: ownInsuranceConfirmed }}
                 >
                   <View style={{ width: 20, height: 20, borderRadius: 4, borderWidth: 2, borderColor: ownInsuranceConfirmed ? colors.brand : colors.border, backgroundColor: ownInsuranceConfirmed ? colors.brand : 'transparent', justifyContent: 'center', alignItems: 'center' }}>
                     {ownInsuranceConfirmed && <Text style={{ color: colors.white, fontSize: 12, fontWeight: '800' }}>✓</Text>}
@@ -402,10 +406,10 @@ export default function CheckoutScreen() {
             </View>
 
             <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-              <TouchableOpacity style={styles.ghostBtn} onPress={() => setStep(1)}>
+              <TouchableOpacity style={styles.ghostBtn} onPress={() => setStep(1)} accessibilityRole="button" accessibilityLabel="Back to your information">
                 <Text style={styles.ghostBtnText}>← Back</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.btn, { flex: 1 }]} onPress={handleSubmit} disabled={submitting}>
+              <TouchableOpacity style={[styles.btn, { flex: 1 }]} onPress={handleSubmit} disabled={submitting} accessibilityRole="button">
                 <Text style={styles.btnText}>{submitting ? 'Confirming...' : 'Confirm Booking'}</Text>
               </TouchableOpacity>
             </View>

@@ -7,13 +7,15 @@
 // const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN;
 // if (SENTRY_DSN) Sentry.init({ dsn: SENTRY_DSN, tracesSampleRate: 0.2 });
 
-export function logError(error, context = {}) {
-  const message = error?.message || String(error);
+type LogContext = Record<string, unknown>;
+
+export function logError(error: unknown, context: LogContext = {}): void {
+  const message = error instanceof Error ? error.message : String(error);
   console.error(`[ride] ${message}`, Object.keys(context).length ? context : '');
   // if (SENTRY_DSN) Sentry.captureException(error, { extra: context });
 }
 
-export function logWarn(message, context = {}) {
+export function logWarn(message: string, context: LogContext = {}): void {
   console.warn(`[ride] ${message}`, Object.keys(context).length ? context : '');
   // if (SENTRY_DSN) Sentry.captureMessage(message, { level: 'warning', extra: context });
 }

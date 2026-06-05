@@ -1,13 +1,35 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE } from './config';
+import { logWarn } from './logger';
 import { getSecureItem, setSecureItem, deleteSecureItem } from './secureStorage';
 
 export const GUEST_TOKEN_KEY = 'ride_guest_token';
 export const GUEST_CUSTOMER_KEY = 'ride_guest_customer';
 
-export async function api(path, opts = {}) {
+export interface ApiError extends Error {
+  status?: number;
+}
+
+export interface GuestCustomer {
+  id?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  [key: string]: unknown;
+}
+
+export interface GuestSession {
+  token: string | null;
+  customer: GuestCustomer | null;
+}
+
+interface ApiOptions extends Omit<RequestInit, 'headers'> {
+  headers?: Record<string, string>;
+}
+
+export async function api<T = any>(path: string, opts: ApiOptions = {}): Promise<T> {
   const method = String(opts.method || 'GET').toUpperCase();
-  const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+  const headers: Record<string, string> = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
 
   // Attach guest token if available
   const guestToken = await getSecureItem(GUEST_TOKEN_KEY);
@@ -21,27 +43,29 @@ export async function api(path, opts = {}) {
     try {
       const data = await res.json();
       if (data?.error) msg = data.error;
-    } catch {}
-    const err = new Error(msg);
+    } catch {
+      // body wasn't JSON — keep the status-based message
+    }
+    const err: ApiError = new Error(msg);
     err.status = res.status;
     throw err;
   }
 
-  if (res.status === 204) return null;
-  return res.json();
+  if (res.status === 204) return null as T;
+  return res.json() as Promise<T>;
 }
 
-export async function storeGuestSession(token, customer) {
+export async function storeGuestSession(token: string, customer?: GuestCustomer | null): Promise<void> {
   try {
     await setSecureItem(GUEST_TOKEN_KEY, token);
     // Customer profile is not a credential; AsyncStorage is fine here.
     if (customer) await AsyncStorage.setItem(GUEST_CUSTOMER_KEY, JSON.stringify(customer));
   } catch (err) {
-    console.warn('storeGuestSession failed:', err?.message);
+    logWarn(`storeGuestSession failed: ${err instanceof Error ? err.message : err}`);
   }
 }
 
-export async function readGuestSession() {
+export async function readGuestSession(): Promise<GuestSession> {
   try {
     const token = await getSecureItem(GUEST_TOKEN_KEY);
     const raw = await AsyncStorage.getItem(GUEST_CUSTOMER_KEY);
@@ -51,11 +75,11 @@ export async function readGuestSession() {
   }
 }
 
-export async function clearGuestSession() {
+export async function clearGuestSession(): Promise<void> {
   try {
     await deleteSecureItem(GUEST_TOKEN_KEY);
     await AsyncStorage.removeItem(GUEST_CUSTOMER_KEY);
   } catch (err) {
-    console.warn('clearGuestSession failed:', err?.message);
+    logWarn(`clearGuestSession failed: ${err instanceof Error ? err.message : err}`);
   }
 }

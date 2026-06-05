@@ -20,7 +20,7 @@ export default class ErrorBoundary extends Component {
         <Text style={styles.emoji}>😕</Text>
         <Text style={styles.title}>Something went wrong</Text>
         <Text style={styles.subtitle}>An unexpected error occurred. Please try again.</Text>
-        <TouchableOpacity style={styles.btn} onPress={() => this.setState({ error: null })}>
+        <TouchableOpacity style={styles.btn} onPress={() => this.setState({ error: null })} accessibilityRole="button">
           <Text style={styles.btnText}>Try Again</Text>
         </TouchableOpacity>
       </View>

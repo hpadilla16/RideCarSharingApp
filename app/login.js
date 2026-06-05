@@ -36,7 +36,7 @@ export default function LoginScreen() {
         <Text style={styles.subtitle}>
           We sent a sign-in link to {email}. Click the link to access your trips. It expires in 15 minutes.
         </Text>
-        <TouchableOpacity style={styles.ghostBtn} onPress={() => { setSent(false); setEmail(''); }}>
+        <TouchableOpacity style={styles.ghostBtn} onPress={() => { setSent(false); setEmail(''); }} accessibilityRole="button">
           <Text style={styles.ghostBtnText}>Use a different email</Text>
         </TouchableOpacity>
       </View>
@@ -63,13 +63,14 @@ export default function LoginScreen() {
           keyboardType="email-address"
           autoCapitalize="none"
           autoComplete="email"
+          accessibilityLabel="Email address"
         />
 
-        <TouchableOpacity style={styles.btn} onPress={requestLink} disabled={loading} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.btn} onPress={requestLink} disabled={loading} activeOpacity={0.8} accessibilityRole="button">
           <Text style={styles.btnText}>{loading ? 'Sending...' : 'Send Sign-in Link'}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.ghostBtn} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.ghostBtn} onPress={() => router.back()} accessibilityRole="button">
           <Text style={styles.ghostBtnText}>Back to Explore</Text>
         </TouchableOpacity>
       </View>

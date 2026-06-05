@@ -93,7 +93,7 @@ export default function MapScreen() {
       {/* Bottom card: count */}
       <View style={styles.bottomCard}>
         <Text style={styles.bottomText}>{listings.length} cars near you</Text>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Switch to list view">
           <Text style={styles.bottomLink}>List view</Text>
         </TouchableOpacity>
       </View>

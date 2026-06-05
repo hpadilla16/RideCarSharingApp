@@ -4,10 +4,11 @@
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { logWarn } from './logger';
 
 const isWeb = Platform.OS === 'web';
 
-export async function getSecureItem(key) {
+export async function getSecureItem(key: string): Promise<string | null> {
   try {
     if (isWeb) return await AsyncStorage.getItem(key);
     let value = await SecureStore.getItemAsync(key);
@@ -22,25 +23,28 @@ export async function getSecureItem(key) {
     }
     return value;
   } catch (err) {
-    console.warn(`secureStorage.get(${key}) failed:`, err?.message);
+    logWarn(`secureStorage.get(${key}) failed: ${err instanceof Error ? err.message : err}`);
     return null;
   }
 }
 
-export async function setSecureItem(key, value) {
+export async function setSecureItem(key: string, value: string): Promise<void> {
   try {
-    if (isWeb) return await AsyncStorage.setItem(key, value);
+    if (isWeb) {
+      await AsyncStorage.setItem(key, value);
+      return;
+    }
     await SecureStore.setItemAsync(key, value);
   } catch (err) {
-    console.warn(`secureStorage.set(${key}) failed:`, err?.message);
+    logWarn(`secureStorage.set(${key}) failed: ${err instanceof Error ? err.message : err}`);
   }
 }
 
-export async function deleteSecureItem(key) {
+export async function deleteSecureItem(key: string): Promise<void> {
   try {
     if (!isWeb) await SecureStore.deleteItemAsync(key);
     await AsyncStorage.removeItem(key); // also clears any legacy copy
   } catch (err) {
-    console.warn(`secureStorage.delete(${key}) failed:`, err?.message);
+    logWarn(`secureStorage.delete(${key}) failed: ${err instanceof Error ? err.message : err}`);
   }
 }

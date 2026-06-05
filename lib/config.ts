@@ -1,14 +1,18 @@
 // Single source of truth for app configuration.
 // Set EXPO_PUBLIC_API_BASE in .env to point at staging/local backends.
-export const API_BASE = process.env.EXPO_PUBLIC_API_BASE || 'https://ridefleetmanager.com';
+export const API_BASE: string = process.env.EXPO_PUBLIC_API_BASE || 'https://ridefleetmanager.com';
 
-export const API_HOST = (() => {
-  try { return new URL(API_BASE).hostname; } catch { return 'ridefleetmanager.com'; }
+export const API_HOST: string = (() => {
+  try {
+    return new URL(API_BASE).hostname;
+  } catch {
+    return 'ridefleetmanager.com';
+  }
 })();
 
 // Hosts the payment WebView is allowed to navigate to.
 // Backend gateways: PayArc (US mainland) and Authorize.Net Accept Hosted.
-export const PAYMENT_ALLOWED_HOSTS = [
+export const PAYMENT_ALLOWED_HOSTS: string[] = [
   API_HOST,
   'secure.payarc.net',
   'api.payarc.net',

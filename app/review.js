@@ -8,7 +8,7 @@ function StarSelector({ value, onChange }) {
   return (
     <View style={{ flexDirection: 'row', gap: 8, marginVertical: spacing.md }}>
       {[1, 2, 3, 4, 5].map((star) => (
-        <TouchableOpacity key={star} onPress={() => onChange(star)}>
+        <TouchableOpacity key={star} onPress={() => onChange(star)} accessibilityRole="button" accessibilityLabel={`Rate ${star} star${star !== 1 ? 's' : ''}`} accessibilityState={{ selected: star <= value }}>
           <Text style={{ fontSize: 36, color: star <= value ? '#f5a623' : '#d1d5db' }}>★</Text>
         </TouchableOpacity>
       ))}
@@ -71,7 +71,7 @@ export default function ReviewScreen() {
         <Text style={{ fontSize: 48, marginBottom: spacing.md }}>⭐</Text>
         <Text style={styles.title}>Review Submitted!</Text>
         <Text style={styles.subtitle}>Thank you for your feedback.</Text>
-        <TouchableOpacity style={styles.btn} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.btn} onPress={() => router.back()} accessibilityRole="button">
           <Text style={styles.btnText}>Done</Text>
         </TouchableOpacity>
       </View>
@@ -109,9 +109,10 @@ export default function ReviewScreen() {
         value={comments}
         onChangeText={setComments}
         multiline
+        accessibilityLabel="Tell others about your experience"
       />
 
-      <TouchableOpacity style={[styles.btn, rating < 1 && { opacity: 0.5 }]} onPress={handleSubmit} disabled={submitting || rating < 1}>
+      <TouchableOpacity style={[styles.btn, rating < 1 && { opacity: 0.5 }]} onPress={handleSubmit} disabled={submitting || rating < 1} accessibilityRole="button">
         <Text style={styles.btnText}>{submitting ? 'Submitting...' : 'Submit Review'}</Text>
       </TouchableOpacity>
     </ScrollView>

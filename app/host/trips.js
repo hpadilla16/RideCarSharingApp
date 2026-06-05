@@ -37,7 +37,7 @@ export default function HostTripsScreen() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: spacing.lg, paddingBottom: 60 }}>
-      <TouchableOpacity onPress={() => router.back()}><Text style={{ color: colors.brand, fontWeight: '600', marginBottom: spacing.md }}>← Dashboard</Text></TouchableOpacity>
+      <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back to dashboard"><Text style={{ color: colors.brand, fontWeight: '600', marginBottom: spacing.md }}>← Dashboard</Text></TouchableOpacity>
       <Text style={{ fontSize: fontSize.xl, fontWeight: '800', color: colors.ink, marginBottom: spacing.lg }}>My Trips</Text>
       {msg ? <Text style={{ color: colors.muted, marginBottom: spacing.md }}>{msg}</Text> : null}
       {trips.map((t) => (
@@ -53,8 +53,8 @@ export default function HostTripsScreen() {
           {t.totalPrice != null && <Text style={{ fontWeight: '700', color: colors.brand, marginTop: 4 }}>{fmtMoney(t.totalPrice)}</Text>}
           {t.status === 'PENDING_APPROVAL' && (
             <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
-              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: 'rgba(80,200,120,.15)' }]} onPress={() => updateStatus(t.id, 'CONFIRMED')}><Text style={{ color: colors.success, fontWeight: '700', fontSize: fontSize.xs }}>Approve</Text></TouchableOpacity>
-              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: 'rgba(255,80,80,.1)' }]} onPress={() => updateStatus(t.id, 'CANCELLED')}><Text style={{ color: colors.error, fontWeight: '700', fontSize: fontSize.xs }}>Decline</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: 'rgba(80,200,120,.15)' }]} onPress={() => updateStatus(t.id, 'CONFIRMED')} accessibilityRole="button" accessibilityLabel={`Approve trip ${t.tripCode || ''}`}><Text style={{ color: colors.success, fontWeight: '700', fontSize: fontSize.xs }}>Approve</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: 'rgba(255,80,80,.1)' }]} onPress={() => updateStatus(t.id, 'CANCELLED')} accessibilityRole="button" accessibilityLabel={`Decline trip ${t.tripCode || ''}`}><Text style={{ color: colors.error, fontWeight: '700', fontSize: fontSize.xs }}>Decline</Text></TouchableOpacity>
             </View>
           )}
         </View>

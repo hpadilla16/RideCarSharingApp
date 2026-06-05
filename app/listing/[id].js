@@ -59,7 +59,7 @@ export default function ListingDetailScreen() {
       {images.length > 0 && (
         <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={{ height: 260 }}>
           {images.map((url, idx) => (
-            <Image key={idx} source={{ uri: url }} style={styles.galleryImage} resizeMode="cover" />
+            <Image key={idx} source={{ uri: url }} style={styles.galleryImage} resizeMode="cover" accessibilityLabel={`Photo ${idx + 1} of ${listing.title || vehicleLabel(listing)}`} />
           ))}
         </ScrollView>
       )}
@@ -111,12 +111,12 @@ export default function ListingDetailScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Select Your Dates</Text>
           <View style={styles.dateRow}>
-            <TouchableOpacity style={styles.dateBtn} onPress={() => setShowPickupPicker(true)}>
+            <TouchableOpacity style={styles.dateBtn} onPress={() => setShowPickupPicker(true)} accessibilityRole="button" accessibilityLabel={`Pickup date, ${pickupDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}>
               <Text style={styles.dateLabel}>Pickup</Text>
               <Text style={styles.dateValue}>{pickupDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Text>
             </TouchableOpacity>
             <Text style={styles.dateArrow}>→</Text>
-            <TouchableOpacity style={styles.dateBtn} onPress={() => setShowReturnPicker(true)}>
+            <TouchableOpacity style={styles.dateBtn} onPress={() => setShowReturnPicker(true)} accessibilityRole="button" accessibilityLabel={`Return date, ${returnDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}>
               <Text style={styles.dateLabel}>Return</Text>
               <Text style={styles.dateValue}>{returnDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Text>
             </TouchableOpacity>
@@ -181,7 +181,7 @@ export default function ListingDetailScreen() {
 
       {/* Fixed Book Button */}
       <View style={styles.bookBar}>
-        <TouchableOpacity onPress={async () => { const saved = await toggleFavorite(listing); setFaved(saved); }} style={{ padding: spacing.sm }}>
+        <TouchableOpacity onPress={async () => { const saved = await toggleFavorite(listing); setFaved(saved); }} style={{ padding: spacing.sm }} accessibilityRole="button" accessibilityLabel={faved ? 'Remove from saved cars' : 'Save this car'} accessibilityState={{ selected: faved }}>
           <Text style={{ fontSize: 24 }}>{faved ? '❤️' : '🤍'}</Text>
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
@@ -191,6 +191,7 @@ export default function ListingDetailScreen() {
           style={styles.bookBtn}
           onPress={() => router.push({ pathname: '/checkout', params: { listingId: id, pickupAt: pickupDate.toISOString(), returnAt: returnDate.toISOString() } })}
           activeOpacity={0.8}
+          accessibilityRole="button"
         >
           <Text style={styles.bookBtnText}>Book This Car</Text>
         </TouchableOpacity>

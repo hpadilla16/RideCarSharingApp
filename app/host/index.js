@@ -46,7 +46,7 @@ export default function HostDashboard() {
           <Text style={styles.title}>{profile?.displayName || user?.fullName || 'Host'}</Text>
           <Text style={{ color: colors.muted, fontSize: fontSize.sm }}>{profile?.email || ''}</Text>
         </View>
-        <TouchableOpacity onPress={handleLogout}><Text style={{ color: colors.error, fontWeight: '600' }}>Logout</Text></TouchableOpacity>
+        <TouchableOpacity onPress={handleLogout} accessibilityRole="button"><Text style={{ color: colors.error, fontWeight: '600' }}>Logout</Text></TouchableOpacity>
       </View>
 
       {error ? <Text style={{ color: colors.error, marginBottom: spacing.md }}>{error}</Text> : null}
@@ -68,9 +68,9 @@ export default function HostDashboard() {
 
       {/* Quick Nav */}
       <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg, flexWrap: 'wrap' }}>
-        <TouchableOpacity style={styles.navBtn} onPress={() => router.push('/host/listings')}><Text style={styles.navBtnText}>My Listings</Text></TouchableOpacity>
-        <TouchableOpacity style={styles.navBtn} onPress={() => router.push('/host/trips')}><Text style={styles.navBtnText}>Trips</Text></TouchableOpacity>
-        <TouchableOpacity style={styles.navBtn} onPress={() => router.push('/host/earnings')}><Text style={styles.navBtnText}>Earnings</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.navBtn} onPress={() => router.push('/host/listings')} accessibilityRole="button"><Text style={styles.navBtnText}>My Listings</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.navBtn} onPress={() => router.push('/host/trips')} accessibilityRole="button"><Text style={styles.navBtnText}>Trips</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.navBtn} onPress={() => router.push('/host/earnings')} accessibilityRole="button"><Text style={styles.navBtnText}>Earnings</Text></TouchableOpacity>
       </View>
 
       {/* Recent Listings */}

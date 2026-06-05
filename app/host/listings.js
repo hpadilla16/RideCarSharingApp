@@ -45,7 +45,7 @@ export default function HostListingsScreen() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: spacing.lg, paddingBottom: 60 }}>
-      <TouchableOpacity onPress={() => router.back()}><Text style={{ color: colors.brand, fontWeight: '600', marginBottom: spacing.md }}>← Dashboard</Text></TouchableOpacity>
+      <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back to dashboard"><Text style={{ color: colors.brand, fontWeight: '600', marginBottom: spacing.md }}>← Dashboard</Text></TouchableOpacity>
       <Text style={{ fontSize: fontSize.xl, fontWeight: '800', color: colors.ink, marginBottom: spacing.lg }}>My Listings</Text>
       {msg ? <Text style={{ color: msg.includes('updated') ? colors.success : colors.error, marginBottom: spacing.md }}>{msg}</Text> : null}
       {loading && <Text style={{ color: colors.muted }}>Loading...</Text>}
@@ -53,11 +53,11 @@ export default function HostListingsScreen() {
         <View key={l.id} style={styles.card}>
           {editId === l.id ? (
             <View style={{ gap: spacing.sm }}>
-              <TextInput style={styles.input} value={editForm.title} onChangeText={(v) => setEditForm((f) => ({ ...f, title: v }))} placeholder="Title" />
-              <TextInput style={styles.input} value={String(editForm.baseDailyRate)} onChangeText={(v) => setEditForm((f) => ({ ...f, baseDailyRate: v }))} placeholder="Daily Rate" keyboardType="numeric" />
+              <TextInput style={styles.input} value={editForm.title} onChangeText={(v) => setEditForm((f) => ({ ...f, title: v }))} placeholder="Title" accessibilityLabel="Title" />
+              <TextInput style={styles.input} value={String(editForm.baseDailyRate)} onChangeText={(v) => setEditForm((f) => ({ ...f, baseDailyRate: v }))} placeholder="Daily Rate" keyboardType="numeric" accessibilityLabel="Daily Rate" />
               <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                <TouchableOpacity style={styles.saveBtn} onPress={saveEdit}><Text style={{ color: colors.white, fontWeight: '700' }}>Save</Text></TouchableOpacity>
-                <TouchableOpacity onPress={() => setEditId(null)}><Text style={{ color: colors.muted, padding: spacing.sm }}>Cancel</Text></TouchableOpacity>
+                <TouchableOpacity style={styles.saveBtn} onPress={saveEdit} accessibilityRole="button" accessibilityLabel="Save listing changes"><Text style={{ color: colors.white, fontWeight: '700' }}>Save</Text></TouchableOpacity>
+                <TouchableOpacity onPress={() => setEditId(null)} accessibilityRole="button" accessibilityLabel="Cancel editing"><Text style={{ color: colors.muted, padding: spacing.sm }}>Cancel</Text></TouchableOpacity>
               </View>
             </View>
           ) : (
@@ -66,7 +66,7 @@ export default function HostListingsScreen() {
                 <Text style={{ fontWeight: '700', color: colors.ink }}>{l.title || 'Untitled'}</Text>
                 <Text style={{ fontSize: fontSize.xs, color: colors.muted }}>{fmtMoney(l.baseDailyRate)}/day · {l.status}</Text>
               </View>
-              <TouchableOpacity onPress={() => startEdit(l)} style={styles.editBtn}><Text style={{ color: colors.brand, fontWeight: '600', fontSize: fontSize.sm }}>Edit</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => startEdit(l)} style={styles.editBtn} accessibilityRole="button" accessibilityLabel={`Edit listing ${l.title || 'Untitled'}`}><Text style={{ color: colors.brand, fontWeight: '600', fontSize: fontSize.sm }}>Edit</Text></TouchableOpacity>
             </View>
           )}
         </View>

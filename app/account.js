@@ -34,7 +34,7 @@ export default function AccountScreen() {
       <View style={styles.center}>
         <Text style={styles.title}>Account</Text>
         <Text style={styles.subtitle}>Sign in to manage your bookings, messages, and reviews.</Text>
-        <TouchableOpacity style={styles.btn} onPress={() => router.push('/login')}>
+        <TouchableOpacity style={styles.btn} onPress={() => router.push('/login')} accessibilityRole="button">
           <Text style={styles.btnText}>Sign In</Text>
         </TouchableOpacity>
       </View>
@@ -52,23 +52,23 @@ export default function AccountScreen() {
       </View>
 
       <View style={styles.menu}>
-        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/trips')}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/trips')} accessibilityRole="button">
           <Text style={styles.menuText}>My Trips</Text>
           <Text style={styles.menuArrow}>→</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => {}}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => {}} accessibilityRole="button">
           <Text style={styles.menuText}>Messages</Text>
           <Text style={styles.menuArrow}>→</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => {}}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => {}} accessibilityRole="button">
           <Text style={styles.menuText}>Reviews</Text>
           <Text style={styles.menuArrow}>→</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/issue')}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/issue')} accessibilityRole="button">
           <Text style={styles.menuText}>Report an Issue</Text>
           <Text style={styles.menuArrow}>→</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/inspection')}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/inspection')} accessibilityRole="button">
           <Text style={styles.menuText}>Vehicle Inspection</Text>
           <Text style={styles.menuArrow}>→</Text>
         </TouchableOpacity>
@@ -84,7 +84,7 @@ export default function AccountScreen() {
         )}
       </View>
 
-      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} accessibilityRole="button">
         <Text style={styles.logoutText}>Sign Out</Text>
       </TouchableOpacity>
     </View>

@@ -66,17 +66,17 @@ export default function OnboardingScreen() {
       {/* Buttons */}
       <View style={styles.buttons}>
         {page > 0 && (
-          <TouchableOpacity style={styles.backBtn} onPress={() => setPage(page - 1)}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => setPage(page - 1)} accessibilityRole="button" accessibilityLabel="Back to previous page">
             <Text style={styles.backText}>← Back</Text>
           </TouchableOpacity>
         )}
         <View style={{ flex: 1 }} />
         {isLast ? (
-          <TouchableOpacity style={styles.primaryBtn} onPress={complete}>
+          <TouchableOpacity style={styles.primaryBtn} onPress={complete} accessibilityRole="button">
             <Text style={styles.primaryText}>I Agree & Continue</Text>
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity style={styles.primaryBtn} onPress={() => setPage(page + 1)}>
+          <TouchableOpacity style={styles.primaryBtn} onPress={() => setPage(page + 1)} accessibilityRole="button" accessibilityLabel="Next page">
             <Text style={styles.primaryText}>Next →</Text>
           </TouchableOpacity>
         )}
@@ -84,14 +84,14 @@ export default function OnboardingScreen() {
 
       {/* Skip */}
       {!isLast && (
-        <TouchableOpacity style={styles.skip} onPress={complete}>
+        <TouchableOpacity style={styles.skip} onPress={complete} accessibilityRole="button" accessibilityLabel="Skip onboarding">
           <Text style={styles.skipText}>Skip</Text>
         </TouchableOpacity>
       )}
 
       {/* Terms link on legal page */}
       {page === 3 && (
-        <TouchableOpacity onPress={() => Linking.openURL('https://ride-carsharing.com/terms')}>
+        <TouchableOpacity onPress={() => Linking.openURL('https://ride-carsharing.com/terms')} accessibilityRole="button" accessibilityLabel="Read full Terms of Service">
           <Text style={styles.termsLink}>Read Full Terms of Service →</Text>
         </TouchableOpacity>
       )}
