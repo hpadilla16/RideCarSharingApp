@@ -88,6 +88,27 @@ export default function TripsScreen() {
               </View>
             </View>
             {b.estimatedTotal && <Text style={styles.cardTotal}>{fmtMoney(b.estimatedTotal)}</Text>}
+
+            {/* Trip actions */}
+            {(b.conversation?.guestToken || b.tripCode) && (
+              <View style={styles.actionsRow}>
+                {b.conversation?.guestToken && (
+                  <TouchableOpacity style={styles.actionBtn} onPress={() => router.push(`/chat/${b.conversation.guestToken}`)} accessibilityRole="button" accessibilityLabel={t('trips.chatA11y')}>
+                    <Text style={styles.actionText}>{t('trips.chat')}</Text>
+                  </TouchableOpacity>
+                )}
+                {b.tripCode && ['CONFIRMED', 'PENDING', 'PENDING_APPROVAL', 'RESERVED'].includes(b.status) && (
+                  <TouchableOpacity style={styles.actionBtn} onPress={() => router.push({ pathname: '/documents', params: { tripCode: b.tripCode } })} accessibilityRole="button" accessibilityLabel={t('trips.documentsA11y')}>
+                    <Text style={styles.actionText}>{t('trips.documents')}</Text>
+                  </TouchableOpacity>
+                )}
+                {b.tripCode && ['CONFIRMED', 'ACTIVE', 'IN_PROGRESS'].includes(b.status) && (
+                  <TouchableOpacity style={styles.actionBtn} onPress={() => router.push({ pathname: '/inspection', params: { tripCode: b.tripCode, phase: b.status === 'CONFIRMED' ? 'PICKUP' : 'RETURN' } })} accessibilityRole="button" accessibilityLabel={t('trips.inspectionA11y')}>
+                    <Text style={styles.actionText}>{t('trips.inspection')}</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
           </View>
         ))}
       </View>
@@ -112,4 +133,7 @@ const styles = StyleSheet.create({
   label: { fontSize: fontSize.xs, color: colors.muted, fontWeight: '600', textTransform: 'uppercase', marginBottom: 2 },
   statusBadge: { paddingVertical: 3, paddingHorizontal: 10, borderRadius: 8 },
   statusText: { fontSize: fontSize.xs, fontWeight: '700', textTransform: 'uppercase' },
+  actionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.md },
+  actionBtn: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bg },
+  actionText: { fontSize: fontSize.sm, fontWeight: '600', color: colors.ink },
 });

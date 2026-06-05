@@ -73,6 +73,7 @@ export default function AppLayout() {
         <Tabs.Screen name="issue" options={{ href: null, title: t('layout.reportIssue') }} />
         <Tabs.Screen name="review" options={{ href: null, title: t('layout.review') }} />
         <Tabs.Screen name="inspection" options={{ href: null, title: t('layout.inspection') }} />
+        <Tabs.Screen name="documents" options={{ href: null, title: t('layout.documents') }} />
         <Tabs.Screen name="map" options={{ href: null, title: t('layout.map'), headerShown: false }} />
         <Tabs.Screen name="onboarding" options={{ href: null, title: t('layout.welcome'), headerShown: false }} />
         <Tabs.Screen name="host/index" options={{ href: null, title: t('layout.hostDashboard') }} />

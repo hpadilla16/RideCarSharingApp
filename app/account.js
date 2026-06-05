@@ -88,12 +88,8 @@ export default function AccountScreen() {
           <Text style={styles.menuText}>{t('account.myTrips')}</Text>
           <Text style={styles.menuArrow}>→</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => {}} accessibilityRole="button">
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/trips')} accessibilityRole="button">
           <Text style={styles.menuText}>{t('account.messages')}</Text>
-          <Text style={styles.menuArrow}>→</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => {}} accessibilityRole="button">
-          <Text style={styles.menuText}>{t('account.reviews')}</Text>
           <Text style={styles.menuArrow}>→</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/issue')} accessibilityRole="button">

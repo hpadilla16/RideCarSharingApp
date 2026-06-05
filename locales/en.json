@@ -1,22 +1,4 @@
 {
-  "common": {
-    "loading": "Loading...",
-    "tryAgain": "Try Again",
-    "cancel": "Cancel",
-    "save": "Save",
-    "done": "Done",
-    "back": "← Back",
-    "continue": "Continue",
-    "submit": "Submit",
-    "signIn": "Sign In",
-    "signOut": "Sign Out",
-    "error": "Something went wrong",
-    "perDay": "/day",
-    "free": "Free",
-    "language": "Language",
-    "english": "English",
-    "spanish": "Español"
-  },
   "account": {
     "biometricLogin": "Biometric Login",
     "guest": "Guest",
@@ -117,6 +99,48 @@
     "upTo": "Up to: {{value}}",
     "viewMyTrips": "View My Trips",
     "yourInformation": "Your Information"
+  },
+  "common": {
+    "loading": "Loading...",
+    "tryAgain": "Try Again",
+    "cancel": "Cancel",
+    "save": "Save",
+    "done": "Done",
+    "back": "← Back",
+    "continue": "Continue",
+    "submit": "Submit",
+    "signIn": "Sign In",
+    "signOut": "Sign Out",
+    "error": "Something went wrong",
+    "perDay": "/day",
+    "free": "Free",
+    "language": "Language",
+    "english": "English",
+    "spanish": "Español"
+  },
+  "documents": {
+    "allApproved": "✅ All documents approved — you're ready for pickup!",
+    "approvedNote": "Approved — nothing else needed.",
+    "camera": "📷 Camera",
+    "cameraA11y": "Take {{doc}} photo with camera",
+    "gallery": "🖼 Gallery",
+    "galleryA11y": "Choose {{doc}} photo from gallery",
+    "missingTrip": "No trip code found.",
+    "pendingNote": "Submitted — waiting for host review. You can re-capture to replace it.",
+    "rejectedReason": "Rejected: {{reason}}. Please re-submit.",
+    "removeCaptureA11y": "Remove captured photo",
+    "retake": "Retake",
+    "status_approved": "Approved",
+    "status_pending": "Pending",
+    "status_rejected": "Rejected",
+    "submitting": "Submitting...",
+    "subtitle": "Upload your driver's license and proof of insurance before pickup. The host reviews them ahead of your trip.",
+    "title": "Pre-Check-In Documents",
+    "trip": "Trip: {{tripCode}}",
+    "type_insurance": "Proof of Insurance",
+    "type_license": "Driver's License",
+    "unableToLoad": "Unable to load documents",
+    "uploadFailed": "Upload failed. Check your connection and try again."
   },
   "errorBoundary": {
     "subtitle": "An unexpected error occurred. Please try again."
@@ -290,6 +314,7 @@
   "layout": {
     "account": "Account",
     "checkout": "Checkout",
+    "documents": "Documents",
     "explore": "Explore",
     "hostDashboard": "Host Dashboard",
     "hostEarnings": "Host Earnings",
@@ -385,6 +410,12 @@
     "unableToSubmit": "Unable to submit review"
   },
   "trips": {
+    "chat": "💬 Chat",
+    "chatA11y": "Open trip chat",
+    "documents": "📄 Documents",
+    "documentsA11y": "Pre-check-in documents",
+    "inspection": "📷 Inspection",
+    "inspectionA11y": "Vehicle inspection",
     "noTripsYet": "No trips yet.",
     "pickup": "Pickup",
     "return": "Return",
