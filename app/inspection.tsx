@@ -9,7 +9,14 @@ import { useTranslation } from 'react-i18next';
 
 const PHOTO_SLOT_IDS = ['front', 'back', 'left', 'right', 'interior', 'dashboard', 'damage'];
 
-function assetToEntry(asset) {
+interface PhotoEntry {
+  uri: string;
+  dataUrl: string | null;
+}
+
+const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+function assetToEntry(asset: ImagePicker.ImagePickerAsset): PhotoEntry {
   // Keep uri for display; build a base64 data URL for upload.
   const mime = asset.mimeType || 'image/jpeg';
   return {
@@ -20,15 +27,15 @@ function assetToEntry(asset) {
 
 export default function InspectionScreen() {
   const { t } = useTranslation();
-  const { tripCode, phase } = useLocalSearchParams();
+  const { tripCode, phase } = useLocalSearchParams<{ tripCode?: string; phase?: string }>();
   const PHOTO_SLOTS = PHOTO_SLOT_IDS.map((id) => ({ id, label: t(`inspection.slot_${id}`) }));
   const router = useRouter();
-  const [photos, setPhotos] = useState({});
-  const [submitting, setSubmitting] = useState(false);
-  const [done, setDone] = useState(false);
-  const [error, setError] = useState('');
+  const [photos, setPhotos] = useState<Record<string, PhotoEntry>>({});
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [done, setDone] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
 
-  async function takePhoto(slotId) {
+  async function takePhoto(slotId: string) {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert(t('inspection.cameraPermissionTitle'), t('inspection.cameraPermissionBody'));
@@ -47,7 +54,7 @@ export default function InspectionScreen() {
     }
   }
 
-  async function pickFromGallery(slotId) {
+  async function pickFromGallery(slotId: string) {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert(t('inspection.galleryPermissionTitle'), t('inspection.galleryPermissionBody'));
@@ -79,7 +86,7 @@ export default function InspectionScreen() {
     setSubmitting(true);
     setError('');
     try {
-      const body = { phase: phase === 'RETURN' ? 'RETURN' : 'PICKUP', photos: {} };
+      const body: { phase: string; photos: Record<string, string> } = { phase: phase === 'RETURN' ? 'RETURN' : 'PICKUP', photos: {} };
       for (const [slot, entry] of Object.entries(photos)) {
         if (entry?.dataUrl) body.photos[slot] = entry.dataUrl;
       }
@@ -90,7 +97,7 @@ export default function InspectionScreen() {
       setDone(true);
     } catch (err) {
       logError(err, { screen: 'inspection', tripCode });
-      setError(err?.message || t('inspection.uploadFailed'));
+      setError(errMsg(err) || t('inspection.uploadFailed'));
     } finally {
       setSubmitting(false);
     }

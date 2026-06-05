@@ -5,13 +5,15 @@ import { hostLogin } from '../../lib/hostApi';
 import { colors, spacing, fontSize } from '../../lib/theme';
 import { useTranslation } from 'react-i18next';
 
+const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
 export default function HostLoginScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
 
   async function handleLogin() {
     if (!email.trim() || !password) { setError(t('hostLogin.emailPasswordRequired')); return; }
@@ -19,7 +21,7 @@ export default function HostLoginScreen() {
     try {
       await hostLogin(email.trim(), password);
       router.replace('/host');
-    } catch (err) { setError(err.message); }
+    } catch (err) { setError(errMsg(err)); }
     finally { setLoading(false); }
   }
 

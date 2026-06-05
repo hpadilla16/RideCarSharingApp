@@ -7,31 +7,68 @@ import { fmtMoney, fmtDateTime, vehicleLabel, locationLabel } from '../../lib/fo
 import { isFavorite, toggleFavorite } from '../../lib/favorites';
 import { colors, spacing, fontSize } from '../../lib/theme';
 import { useTranslation } from 'react-i18next';
+import type { Vehicle, LocationLike } from '../../lib/format';
+
+interface ListingHost {
+  id?: string;
+  displayName?: string;
+  averageRating?: number | string;
+  reviewCount?: number;
+  [key: string]: unknown;
+}
+
+interface Listing {
+  id: string;
+  title?: string;
+  baseDailyRate?: number | string | null;
+  primaryImageUrl?: string;
+  imageUrls?: string[];
+  shortDescription?: string;
+  instantBook?: boolean;
+  vehicle?: Vehicle | null;
+  location?: LocationLike | null;
+  host?: ListingHost | null;
+  [key: string]: unknown;
+}
+
+interface HostReview {
+  id: string;
+  reviewerName?: string;
+  rating?: number;
+  comments?: string;
+}
+
+interface HostProfile {
+  reviews?: HostReview[];
+  [key: string]: unknown;
+}
+
+const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 export default function ListingDetailScreen() {
   const { t } = useTranslation();
-  const { id, pickupAt, returnAt } = useLocalSearchParams();
+  const { id, pickupAt, returnAt } = useLocalSearchParams<{ id?: string; pickupAt?: string; returnAt?: string }>();
   const router = useRouter();
-  const [listing, setListing] = useState(null);
-  const [hostProfile, setHostProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [faved, setFaved] = useState(false);
-  const [pickupDate, setPickupDate] = useState(() => {
+  const [listing, setListing] = useState<Listing | null>(null);
+  const [hostProfile, setHostProfile] = useState<HostProfile | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>('');
+  const [faved, setFaved] = useState<boolean>(false);
+  const [pickupDate, setPickupDate] = useState<Date>(() => {
     if (pickupAt) return new Date(pickupAt);
     const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(10, 0, 0, 0); return d;
   });
-  const [returnDate, setReturnDate] = useState(() => {
+  const [returnDate, setReturnDate] = useState<Date>(() => {
     if (returnAt) return new Date(returnAt);
     const d = new Date(); d.setDate(d.getDate() + 4); d.setHours(10, 0, 0, 0); return d;
   });
-  const [showPickupPicker, setShowPickupPicker] = useState(false);
-  const [showReturnPicker, setShowReturnPicker] = useState(false);
+  const [showPickupPicker, setShowPickupPicker] = useState<boolean>(false);
+  const [showReturnPicker, setShowReturnPicker] = useState<boolean>(false);
 
   useEffect(() => {
     (async () => {
       try {
-        const boot = await api('/api/public/booking/bootstrap');
+        const boot = await api<{ featuredCarSharingListings?: Listing[] }>('/api/public/booking/bootstrap');
         const featured = boot?.featuredCarSharingListings || [];
         const match = featured.find((l) => l.id === id);
         setListing(match || null);
@@ -39,10 +76,10 @@ export default function ListingDetailScreen() {
         if (match?.id) isFavorite(match.id).then(setFaved);
 
         if (match?.host?.id) {
-          api(`/api/public/booking/hosts/${match.host.id}`).then((hp) => setHostProfile(hp)).catch(() => {});
+          api<HostProfile>(`/api/public/booking/hosts/${match.host.id}`).then((hp) => setHostProfile(hp)).catch(() => {});
         }
       } catch (err) {
-        setError(err?.message || t('listing.unableToLoad'));
+        setError(errMsg(err) || t('listing.unableToLoad'));
       } finally {
         setLoading(false);
       }
@@ -83,8 +120,8 @@ export default function ListingDetailScreen() {
         <View style={styles.badgeRow}>
           {listing.instantBook && <View style={styles.badge}><Text style={styles.badgeText}>{t('listing.instantBook')}</Text></View>}
           <View style={styles.badge}><Text style={styles.badgeText}>{t('listing.tripProtection')}</Text></View>
-          {listing.host?.averageRating > 0 && (
-            <View style={styles.badge}><Text style={styles.badgeText}>★ {Number(listing.host.averageRating).toFixed(1)} ({listing.host.reviewCount || 0})</Text></View>
+          {Number(listing.host?.averageRating) > 0 && (
+            <View style={styles.badge}><Text style={styles.badgeText}>★ {Number(listing.host?.averageRating).toFixed(1)} ({listing.host?.reviewCount || 0})</Text></View>
           )}
         </View>
 
@@ -124,7 +161,7 @@ export default function ListingDetailScreen() {
             </TouchableOpacity>
           </View>
           {(() => {
-            const days = Math.max(1, Math.round((returnDate - pickupDate) / 86400000));
+            const days = Math.max(1, Math.round((returnDate.getTime() - pickupDate.getTime()) / 86400000));
             return (
               <Text style={styles.dateSummary}>
                 {t('listing.daysEstimate', { count: days, total: fmtMoney(Number(listing.baseDailyRate) * days) })}

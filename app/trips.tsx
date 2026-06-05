@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api, readGuestSession } from '../lib/api';
 import { fmtMoney, fmtDateTime } from '../lib/format';
 import { colors, spacing, fontSize } from '../lib/theme';
 import { useTranslation } from 'react-i18next';
 
-const STATUS_COLORS = {
+const STATUS_COLORS: Record<string, string> = {
   CONFIRMED: '#0fb0d8',
   ACTIVE: '#10b981',
   COMPLETED: '#6b7a9a',
@@ -15,36 +15,62 @@ const STATUS_COLORS = {
   PENDING_APPROVAL: '#f59e0b',
 };
 
+interface Booking {
+  id?: string;
+  reference?: string;
+  reservationNumber?: string;
+  tripCode?: string;
+  status?: string;
+  vehicleLabel?: string;
+  pickupAt?: string;
+  returnAt?: string;
+  estimatedTotal?: number | string | null;
+  conversation?: { guestToken?: string } | null;
+  [key: string]: unknown;
+}
+
+const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
 export default function TripsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [loggedIn, setLoggedIn] = useState(false);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>('');
+  const [loggedIn, setLoggedIn] = useState<boolean>(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  async function load() {
+    const { token } = await readGuestSession();
+    if (!token) {
+      setLoggedIn(false);
+      setLoading(false);
+      return;
+    }
+    setLoggedIn(true);
+    try {
+      const data = await api<{ bookings?: Booking[] }>('/api/public/booking/guest-signin/verify', {
+        method: 'POST',
+        body: JSON.stringify({ token }),
+      });
+      setBookings(data?.bookings || []);
+      setError('');
+    } catch (err) {
+      setError(errMsg(err) || t('trips.unableToLoad'));
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    (async () => {
-      const { token } = await readGuestSession();
-      if (!token) {
-        setLoggedIn(false);
-        setLoading(false);
-        return;
-      }
-      setLoggedIn(true);
-      try {
-        const data = await api('/api/public/booking/guest-signin/verify', {
-          method: 'POST',
-          body: JSON.stringify({ token }),
-        });
-        setBookings(data?.bookings || []);
-      } catch (err) {
-        setError(err?.message || t('trips.unableToLoad'));
-      } finally {
-        setLoading(false);
-      }
-    })();
+    load();
   }, []);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }
 
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={colors.brand} /></View>;
 
@@ -61,7 +87,7 @@ export default function TripsScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brand} />}>
       <View style={{ padding: spacing.lg }}>
         <Text style={styles.title}>{t('trips.title')}</Text>
         {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -70,8 +96,8 @@ export default function TripsScreen() {
           <View key={b.id || idx} style={styles.card}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <Text style={styles.cardRef}>{b.reference || b.reservationNumber || b.tripCode}</Text>
-              <View style={[styles.statusBadge, { backgroundColor: (STATUS_COLORS[b.status] || colors.muted) + '22' }]}>
-                <Text style={[styles.statusText, { color: STATUS_COLORS[b.status] || colors.muted }]}>
+              <View style={[styles.statusBadge, { backgroundColor: (STATUS_COLORS[b.status || ''] || colors.muted) + '22' }]}>
+                <Text style={[styles.statusText, { color: STATUS_COLORS[b.status || ''] || colors.muted }]}>
                   {(b.status || '').replace(/_/g, ' ')}
                 </Text>
               </View>
@@ -93,16 +119,16 @@ export default function TripsScreen() {
             {(b.conversation?.guestToken || b.tripCode) && (
               <View style={styles.actionsRow}>
                 {b.conversation?.guestToken && (
-                  <TouchableOpacity style={styles.actionBtn} onPress={() => router.push(`/chat/${b.conversation.guestToken}`)} accessibilityRole="button" accessibilityLabel={t('trips.chatA11y')}>
+                  <TouchableOpacity style={styles.actionBtn} onPress={() => router.push(`/chat/${b.conversation?.guestToken}`)} accessibilityRole="button" accessibilityLabel={t('trips.chatA11y')}>
                     <Text style={styles.actionText}>{t('trips.chat')}</Text>
                   </TouchableOpacity>
                 )}
-                {b.tripCode && ['CONFIRMED', 'PENDING', 'PENDING_APPROVAL', 'RESERVED'].includes(b.status) && (
+                {b.tripCode && ['CONFIRMED', 'PENDING', 'PENDING_APPROVAL', 'RESERVED'].includes(b.status || '') && (
                   <TouchableOpacity style={styles.actionBtn} onPress={() => router.push({ pathname: '/documents', params: { tripCode: b.tripCode } })} accessibilityRole="button" accessibilityLabel={t('trips.documentsA11y')}>
                     <Text style={styles.actionText}>{t('trips.documents')}</Text>
                   </TouchableOpacity>
                 )}
-                {b.tripCode && ['CONFIRMED', 'ACTIVE', 'IN_PROGRESS'].includes(b.status) && (
+                {b.tripCode && ['CONFIRMED', 'ACTIVE', 'IN_PROGRESS'].includes(b.status || '') && (
                   <TouchableOpacity style={styles.actionBtn} onPress={() => router.push({ pathname: '/inspection', params: { tripCode: b.tripCode, phase: b.status === 'CONFIRMED' ? 'PICKUP' : 'RETURN' } })} accessibilityRole="button" accessibilityLabel={t('trips.inspectionA11y')}>
                     <Text style={styles.actionText}>{t('trips.inspection')}</Text>
                   </TouchableOpacity>

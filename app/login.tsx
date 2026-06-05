@@ -5,13 +5,15 @@ import { api, storeGuestSession } from '../lib/api';
 import { colors, spacing, fontSize } from '../lib/theme';
 import { useTranslation } from 'react-i18next';
 
+const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
 export default function LoginScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [sent, setSent] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
 
   async function requestLink() {
     if (!email.trim()) { setError(t('login.enterEmail')); return; }
@@ -24,7 +26,7 @@ export default function LoginScreen() {
       });
       setSent(true);
     } catch (err) {
-      setError(err?.message || t('login.unableToSend'));
+      setError(errMsg(err) || t('login.unableToSend'));
     } finally {
       setLoading(false);
     }

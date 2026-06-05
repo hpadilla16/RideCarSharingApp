@@ -7,14 +7,27 @@ import { useTranslation } from 'react-i18next';
 
 const ISSUE_TYPE_IDS = ['VEHICLE_DAMAGE', 'BILLING', 'SERVICE', 'SAFETY', 'OTHER'];
 
+interface IssueForm {
+  reference: string;
+  email: string;
+  type: string;
+  description: string;
+}
+
+interface IssueResult {
+  [key: string]: unknown;
+}
+
+const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
 export default function IssueScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const ISSUE_TYPES = ISSUE_TYPE_IDS.map((id) => ({ id, label: t(`issue.type_${id}`) }));
-  const [form, setForm] = useState({ reference: '', email: '', type: 'SERVICE', description: '' });
-  const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState('');
+  const [form, setForm] = useState<IssueForm>({ reference: '', email: '', type: 'SERVICE', description: '' });
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [result, setResult] = useState<IssueResult | null>(null);
+  const [error, setError] = useState<string>('');
 
   async function handleSubmit() {
     if (!form.reference.trim() || !form.email.trim() || !form.description.trim()) {
@@ -30,7 +43,7 @@ export default function IssueScreen() {
       });
       setResult(data);
     } catch (err) {
-      setError(err?.message || t('issue.unableToSubmit'));
+      setError(errMsg(err) || t('issue.unableToSubmit'));
     } finally {
       setSubmitting(false);
     }

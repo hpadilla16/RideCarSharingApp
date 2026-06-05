@@ -1,16 +1,24 @@
-import { Component } from 'react';
+import React, { Component, ErrorInfo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { logError } from '../lib/logger';
 import i18n from '../lib/i18n';
 
-export default class ErrorBoundary extends Component {
-  state = { error: null };
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+}
 
-  static getDerivedStateFromError(error) {
+interface ErrorBoundaryState {
+  error: Error | null;
+}
+
+export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  state: ErrorBoundaryState = { error: null };
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { error };
   }
 
-  componentDidCatch(error, info) {
+  componentDidCatch(error: Error, info: ErrorInfo) {
     logError(error, { componentStack: info?.componentStack, source: 'ErrorBoundary' });
   }
 

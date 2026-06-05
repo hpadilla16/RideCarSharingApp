@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Switch } from 'react-native';
-import { readGuestSession, clearGuestSession } from '../lib/api';
+import { readGuestSession, clearGuestSession, GuestCustomer } from '../lib/api';
 import { isBiometricAvailable, isBiometricEnabled, setBiometricEnabled } from '../lib/biometric';
 import { colors, spacing, fontSize } from '../lib/theme';
 import { useTranslation } from 'react-i18next';
@@ -14,10 +14,10 @@ function LanguageSelector() {
     <View style={[styles.menuItem, { justifyContent: 'space-between' }]}>
       <Text style={styles.menuText}>{t('common.language')}</Text>
       <View style={{ flexDirection: 'row', gap: spacing.xs }}>
-        {[
+        {([
           { code: 'en', label: t('common.english') },
           { code: 'es', label: t('common.spanish') },
-        ].map((lang) => (
+        ] as { code: 'en' | 'es'; label: string }[]).map((lang) => (
           <TouchableOpacity
             key={lang.code}
             onPress={() => setLanguage(lang.code)}
@@ -37,10 +37,10 @@ function LanguageSelector() {
 export default function AccountScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const [customer, setCustomer] = useState(null);
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [bioAvailable, setBioAvailable] = useState(false);
-  const [bioEnabled, setBioEnabled] = useState(false);
+  const [customer, setCustomer] = useState<GuestCustomer | null>(null);
+  const [loggedIn, setLoggedIn] = useState<boolean>(false);
+  const [bioAvailable, setBioAvailable] = useState<boolean>(false);
+  const [bioEnabled, setBioEnabled] = useState<boolean>(false);
 
   useEffect(() => {
     (async () => {

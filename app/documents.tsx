@@ -12,21 +12,41 @@ const DOC_TYPES = [
   { type: 'INSURANCE', field: 'insurance' },
 ];
 
-const STATUS_COLORS = {
+const STATUS_COLORS: Record<string, string> = {
   PENDING: '#f59e0b',
   APPROVED: '#10b981',
   REJECTED: '#ef4444',
 };
 
+interface TripDocument {
+  type?: string;
+  status?: string;
+  rejectReason?: string;
+  [key: string]: unknown;
+}
+
+interface DocumentsState {
+  documents?: TripDocument[];
+  tripStatus?: string;
+  [key: string]: unknown;
+}
+
+interface Capture {
+  uri: string;
+  dataUrl: string;
+}
+
+const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
 export default function DocumentsScreen() {
   const { t } = useTranslation();
-  const { tripCode } = useLocalSearchParams();
+  const { tripCode } = useLocalSearchParams<{ tripCode?: string }>();
   const router = useRouter();
-  const [state, setState] = useState(null); // { documents, tripStatus }
-  const [captures, setCaptures] = useState({}); // field -> { uri, dataUrl }
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
+  const [state, setState] = useState<DocumentsState | null>(null); // { documents, tripStatus }
+  const [captures, setCaptures] = useState<Record<string, Capture>>({}); // field -> { uri, dataUrl }
+  const [loading, setLoading] = useState<boolean>(true);
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
 
   const docsPath = `/api/public/booking/trips/${encodeURIComponent(tripCode || '')}/documents`;
 
@@ -35,10 +55,10 @@ export default function DocumentsScreen() {
     setLoading(true);
     setError('');
     try {
-      setState(await api(docsPath));
+      setState(await api<DocumentsState>(docsPath));
     } catch (err) {
       logError(err, { screen: 'documents', tripCode });
-      setError(err?.message || t('documents.unableToLoad'));
+      setError(errMsg(err) || t('documents.unableToLoad'));
     } finally {
       setLoading(false);
     }
@@ -46,16 +66,16 @@ export default function DocumentsScreen() {
 
   useEffect(() => { load(); }, [tripCode]);
 
-  function docFor(type) {
+  function docFor(type: string): TripDocument | null {
     return (state?.documents || []).find((d) => d.type === type) || null;
   }
 
-  async function capture(field, fromCamera) {
+  async function capture(field: string, fromCamera: boolean) {
     const perm = fromCamera
       ? await ImagePicker.requestCameraPermissionsAsync()
       : await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (perm.status !== 'granted') return;
-    const opts = { mediaTypes: ['images'], quality: 0.6, allowsEditing: false, base64: true };
+    const opts: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 0.6, allowsEditing: false, base64: true };
     const result = fromCamera
       ? await ImagePicker.launchCameraAsync(opts)
       : await ImagePicker.launchImageLibraryAsync(opts);
@@ -69,7 +89,7 @@ export default function DocumentsScreen() {
   }
 
   async function submit() {
-    const body = {};
+    const body: Record<string, string> = {};
     for (const { field } of DOC_TYPES) {
       if (captures[field]?.dataUrl) body[field] = captures[field].dataUrl;
     }
@@ -77,11 +97,11 @@ export default function DocumentsScreen() {
     setSubmitting(true);
     setError('');
     try {
-      setState(await api(docsPath, { method: 'POST', body: JSON.stringify(body) }));
+      setState(await api<DocumentsState>(docsPath, { method: 'POST', body: JSON.stringify(body) }));
       setCaptures({});
     } catch (err) {
       logError(err, { screen: 'documents', tripCode });
-      setError(err?.message || t('documents.uploadFailed'));
+      setError(errMsg(err) || t('documents.uploadFailed'));
     } finally {
       setSubmitting(false);
     }

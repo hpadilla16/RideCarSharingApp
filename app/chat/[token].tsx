@@ -12,31 +12,56 @@ import { useTranslation } from 'react-i18next';
 // Fallback polling cadence when the SSE stream is unavailable.
 const POLL_INTERVAL = 15000;
 
+interface ChatMessage {
+  id: string;
+  body?: string;
+  senderType?: string;
+  senderName?: string;
+  createdAt?: string;
+  readAt?: string | null;
+  [key: string]: unknown;
+}
+
+interface ChatRoom {
+  role?: string;
+  tripCode?: string;
+  tripStatus?: string;
+  guestName?: string;
+  hostName?: string;
+  pickupAddress?: string;
+  pickupInstructions?: string;
+  closedAt?: string | null;
+  messages?: ChatMessage[];
+  [key: string]: unknown;
+}
+
+const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
 export default function TripChatScreen() {
   const { t } = useTranslation();
-  const { token } = useLocalSearchParams();
-  const [room, setRoom] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [newMsg, setNewMsg] = useState('');
-  const [sending, setSending] = useState(false);
-  const [showPickup, setShowPickup] = useState(false);
-  const [pickupForm, setPickupForm] = useState({ address: '', instructions: '' });
-  const [showReport, setShowReport] = useState(false);
-  const [reportForm, setReportForm] = useState({ issueType: 'SERVICE', description: '' });
-  const [reportMsg, setReportMsg] = useState('');
-  const scrollRef = useRef(null);
-  const pollRef = useRef(null);
+  const { token } = useLocalSearchParams<{ token?: string }>();
+  const [room, setRoom] = useState<ChatRoom | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>('');
+  const [newMsg, setNewMsg] = useState<string>('');
+  const [sending, setSending] = useState<boolean>(false);
+  const [showPickup, setShowPickup] = useState<boolean>(false);
+  const [pickupForm, setPickupForm] = useState<{ address: string; instructions: string }>({ address: '', instructions: '' });
+  const [showReport, setShowReport] = useState<boolean>(false);
+  const [reportForm, setReportForm] = useState<{ issueType: string; description: string }>({ issueType: 'SERVICE', description: '' });
+  const [reportMsg, setReportMsg] = useState<string>('');
+  const scrollRef = useRef<ScrollView | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const chatPath = `/api/public/booking/trip-chat/${encodeURIComponent(token)}`;
+  const chatPath = `/api/public/booking/trip-chat/${encodeURIComponent(token || '')}`;
 
   async function loadRoom() {
     try {
-      const data = await api(chatPath);
+      const data = await api<ChatRoom>(chatPath);
       setRoom(data);
       setError('');
     } catch (err) {
-      setError(err?.message || t('chat.unableToLoad'));
+      setError(errMsg(err) || t('chat.unableToLoad'));
     } finally {
       setLoading(false);
     }
@@ -51,14 +76,14 @@ export default function TripChatScreen() {
     const startPolling = () => {
       if (pollRef.current) return;
       pollRef.current = setInterval(() => {
-        api(chatPath).then(setRoom).catch(() => {});
+        api<ChatRoom>(chatPath).then(setRoom).catch(() => {});
       }, POLL_INTERVAL);
     };
     const stopPolling = () => {
       if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
     };
 
-    let es = null;
+    let es: EventSource | null = null;
     try {
       es = new EventSource(`${API_BASE}${chatPath}/stream`);
       es.addEventListener('open', () => stopPolling());
@@ -66,7 +91,7 @@ export default function TripChatScreen() {
         // Backend broadcasts each new message (excluding the sender's own
         // role, which already appended locally on send).
         try {
-          const msg = JSON.parse(e.data);
+          const msg: ChatMessage = JSON.parse(e.data || 'null');
           if (msg?.id) {
             setRoom((r) => {
               if (!r) return r;
@@ -84,7 +109,7 @@ export default function TripChatScreen() {
         startPolling();
       });
     } catch (err) {
-      logWarn('SSE unavailable, falling back to polling: ' + (err?.message || err));
+      logWarn('SSE unavailable, falling back to polling: ' + errMsg(err));
       startPolling();
     }
 
@@ -105,21 +130,21 @@ export default function TripChatScreen() {
     if (!newMsg.trim()) return;
     setSending(true);
     try {
-      const msg = await api(`${chatPath}/messages`, { method: 'POST', body: JSON.stringify({ body: newMsg.trim() }) });
+      const msg = await api<ChatMessage>(`${chatPath}/messages`, { method: 'POST', body: JSON.stringify({ body: newMsg.trim() }) });
       setRoom((r) => r ? { ...r, messages: [...(r.messages || []), msg] } : r);
       setNewMsg('');
     } catch (err) {
-      setError(err?.message || t('chat.unableToSend'));
+      setError(errMsg(err) || t('chat.unableToSend'));
     } finally {
       setSending(false);
     }
   }
 
-  async function sendHotAction(action) {
+  async function sendHotAction(action: string) {
     try {
-      const msg = await api(`${chatPath}/action`, { method: 'POST', body: JSON.stringify({ action }) });
+      const msg = await api<ChatMessage>(`${chatPath}/action`, { method: 'POST', body: JSON.stringify({ action }) });
       setRoom((r) => r ? { ...r, messages: [...(r.messages || []), msg] } : r);
-    } catch (err) { setError(err?.message || t('chat.unableToSend')); }
+    } catch (err) { setError(errMsg(err) || t('chat.unableToSend')); }
   }
 
   async function savePickup() {
@@ -127,17 +152,17 @@ export default function TripChatScreen() {
       await api(`${chatPath}/pickup`, { method: 'PATCH', body: JSON.stringify(pickupForm) });
       setShowPickup(false);
       loadRoom();
-    } catch (err) { setError(err?.message || t('chat.unableToUpdate')); }
+    } catch (err) { setError(errMsg(err) || t('chat.unableToUpdate')); }
   }
 
   async function submitReport() {
     if (!reportForm.description.trim()) { setReportMsg(t('chat.describeIssue')); return; }
     try {
-      const result = await api(`${chatPath}/report-issue`, { method: 'POST', body: JSON.stringify(reportForm) });
+      const result = await api<{ ticketRef?: string }>(`${chatPath}/report-issue`, { method: 'POST', body: JSON.stringify(reportForm) });
       setReportMsg(t('chat.ticketCreated', { ticketRef: result.ticketRef }));
       setShowReport(false);
       loadRoom();
-    } catch (err) { setReportMsg(err?.message || t('chat.failed')); }
+    } catch (err) { setReportMsg(errMsg(err) || t('chat.failed')); }
   }
 
   if (loading) return <View style={styles.center}><Text style={styles.muted}>{t('chat.loadingChat')}</Text></View>;

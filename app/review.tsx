@@ -5,7 +5,16 @@ import { api } from '../lib/api';
 import { colors, spacing, fontSize } from '../lib/theme';
 import { useTranslation } from 'react-i18next';
 
-function StarSelector({ value, onChange }) {
+interface ReviewPrompt {
+  review?: { status?: string; rating?: number; comments?: string } | null;
+  trip?: { listingTitle?: string; tripCode?: string; vehicleLabel?: string } | null;
+  host?: { displayName?: string } | null;
+  [key: string]: unknown;
+}
+
+const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+function StarSelector({ value, onChange }: { value: number; onChange: (star: number) => void }) {
   const { t } = useTranslation();
   return (
     <View style={{ flexDirection: 'row', gap: 8, marginVertical: spacing.md }}>
@@ -20,21 +29,21 @@ function StarSelector({ value, onChange }) {
 
 export default function ReviewScreen() {
   const { t } = useTranslation();
-  const { token: reviewToken } = useLocalSearchParams();
+  const { token: reviewToken } = useLocalSearchParams<{ token?: string }>();
   const router = useRouter();
-  const [prompt, setPrompt] = useState(null);
-  const [rating, setRating] = useState(0);
-  const [comments, setComments] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState('');
+  const [prompt, setPrompt] = useState<ReviewPrompt | null>(null);
+  const [rating, setRating] = useState<number>(0);
+  const [comments, setComments] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(true);
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [success, setSuccess] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
 
   useEffect(() => {
     if (!reviewToken) return;
     (async () => {
       try {
-        const data = await api(`/api/public/booking/host-reviews/${encodeURIComponent(reviewToken)}`);
+        const data = await api<ReviewPrompt>(`/api/public/booking/host-reviews/${encodeURIComponent(reviewToken)}`);
         setPrompt(data);
         if (data?.review?.status === 'SUBMITTED') {
           setRating(data.review.rating || 0);
@@ -42,7 +51,7 @@ export default function ReviewScreen() {
           setSuccess(true);
         }
       } catch (err) {
-        setError(err?.message || t('review.unableToLoad'));
+        setError(errMsg(err) || t('review.unableToLoad'));
       } finally {
         setLoading(false);
       }
@@ -54,13 +63,13 @@ export default function ReviewScreen() {
     setSubmitting(true);
     setError('');
     try {
-      await api(`/api/public/booking/host-reviews/${encodeURIComponent(reviewToken)}`, {
+      await api(`/api/public/booking/host-reviews/${encodeURIComponent(reviewToken || '')}`, {
         method: 'POST',
         body: JSON.stringify({ rating, comments: comments.trim() || null }),
       });
       setSuccess(true);
     } catch (err) {
-      setError(err?.message || t('review.unableToSubmit'));
+      setError(errMsg(err) || t('review.unableToSubmit'));
     } finally {
       setSubmitting(false);
     }

@@ -21,7 +21,7 @@ export default function AppLayout() {
       if (show) router.replace('/onboarding');
     });
     registerForPushNotifications();
-    const subscription = addNotificationResponseListener((response) => {
+    const subscription = addNotificationResponseListener((response: { notification?: { request?: { content?: { data?: { chatToken?: string; tripId?: string } } } } }) => {
       const data = response?.notification?.request?.content?.data;
       if (data?.chatToken) router.push(`/chat/${data.chatToken}`);
       else if (data?.tripId) router.push('/trips');

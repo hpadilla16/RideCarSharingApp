@@ -7,24 +7,42 @@ import { colors, spacing, fontSize } from '../../lib/theme';
 import { logError } from '../../lib/logger';
 import { useTranslation } from 'react-i18next';
 
+interface EarningsTrip {
+  id: string;
+  tripCode?: string;
+  status?: string;
+  hostPayout?: number | string | null;
+  totalPrice?: number | string | null;
+  scheduledReturnAt?: string;
+  guest?: { firstName?: string } | null;
+  listing?: { title?: string } | null;
+  [key: string]: unknown;
+}
+
+interface HostDashboardData {
+  trips?: EarningsTrip[];
+  hostProfile?: { payoutEnabled?: boolean } | null;
+  [key: string]: unknown;
+}
+
 export default function HostEarningsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const [dashboard, setDashboard] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [dashboard, setDashboard] = useState<HostDashboardData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     (async () => {
       const { token } = await readHostSession();
       if (!token) { router.replace('/host/login'); return; }
-      try { setDashboard(await hostApi('/dashboard')); } catch (err) { logError(err, { screen: 'host/earnings' }); } finally { setLoading(false); }
+      try { setDashboard(await hostApi<HostDashboardData>('/dashboard')); } catch (err) { logError(err, { screen: 'host/earnings' }); } finally { setLoading(false); }
     })();
   }, []);
 
   const trips = dashboard?.trips || [];
   const completed = trips.filter((t) => t.status === 'COMPLETED');
   const totalEarned = completed.reduce((s, t) => s + Number(t.hostPayout || t.totalPrice || 0), 0);
-  const pending = trips.filter((t) => ['CONFIRMED', 'ACTIVE'].includes(t.status));
+  const pending = trips.filter((t) => ['CONFIRMED', 'ACTIVE'].includes(t.status || ''));
   const pendingAmount = pending.reduce((s, t) => s + Number(t.hostPayout || t.totalPrice || 0), 0);
   const profile = dashboard?.hostProfile;
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, TextInput, FlatList, TouchableOpacity, Image, ScrollView, StyleSheet, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, TextInput, FlatList, TouchableOpacity, Image, ScrollView, StyleSheet, ActivityIndicator, Platform, ListRenderItem } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,32 +10,83 @@ import { fmtMoney, vehicleLabel, locationLabel } from '../lib/format';
 import { getFavorites } from '../lib/favorites';
 import { colors, spacing, fontSize } from '../lib/theme';
 import { useTranslation } from 'react-i18next';
+import type { Vehicle, LocationLike } from '../lib/format';
+
+interface ListingHost {
+  displayName?: string;
+  averageRating?: number | string;
+  [key: string]: unknown;
+}
+
+interface Listing {
+  id: string;
+  title?: string;
+  baseDailyRate?: number | string | null;
+  primaryImageUrl?: string;
+  imageUrls?: string[];
+  instantBook?: boolean;
+  deliveryAvailable?: boolean;
+  fulfillmentMode?: string;
+  vehicle?: Vehicle | null;
+  location?: LocationLike | null;
+  host?: ListingHost | null;
+  [key: string]: unknown;
+}
+
+interface Bootstrap {
+  featuredCarSharingListings?: Listing[];
+  locations?: { id?: string }[];
+  carSharingSearchPlaces?: { id?: string }[];
+  [key: string]: unknown;
+}
+
+interface AiParsed {
+  fallback?: boolean;
+  query?: string;
+  vehicleType?: string;
+  location?: string;
+  pickupDate?: string;
+  maxPrice?: number | string;
+  instantBook?: boolean;
+  [key: string]: unknown;
+}
+
+interface FavoriteEntry {
+  id: string;
+  title?: string;
+  baseDailyRate?: number | string;
+  primaryImageUrl?: string;
+  vehicleLabel?: string;
+  [key: string]: unknown;
+}
+
+const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 export default function ExploreScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const [bootstrap, setBootstrap] = useState(null);
-  const [listings, setListings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searching, setSearching] = useState(false);
-  const [error, setError] = useState('');
-  const [filter, setFilter] = useState('ALL');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [aiParsed, setAiParsed] = useState(null);
-  const [favorites, setFavorites] = useState([]);
-  const [userLocation, setUserLocation] = useState(null);
-  const [locationDenied, setLocationDenied] = useState(false);
+  const [bootstrap, setBootstrap] = useState<Bootstrap | null>(null);
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [searching, setSearching] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+  const [filter, setFilter] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [aiParsed, setAiParsed] = useState<AiParsed | null>(null);
+  const [favorites, setFavorites] = useState<FavoriteEntry[]>([]);
+  const [userLocation, setUserLocation] = useState<Location.LocationObjectCoords | null>(null);
+  const [locationDenied, setLocationDenied] = useState<boolean>(false);
 
   // Date-based search
-  const [pickupDate, setPickupDate] = useState(() => {
+  const [pickupDate, setPickupDate] = useState<Date>(() => {
     const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(10, 0, 0, 0); return d;
   });
-  const [returnDate, setReturnDate] = useState(() => {
+  const [returnDate, setReturnDate] = useState<Date>(() => {
     const d = new Date(); d.setDate(d.getDate() + 4); d.setHours(10, 0, 0, 0); return d;
   });
-  const [showPickupPicker, setShowPickupPicker] = useState(false);
-  const [showReturnPicker, setShowReturnPicker] = useState(false);
-  const [datesSearched, setDatesSearched] = useState(false);
+  const [showPickupPicker, setShowPickupPicker] = useState<boolean>(false);
+  const [showReturnPicker, setShowReturnPicker] = useState<boolean>(false);
+  const [datesSearched, setDatesSearched] = useState<boolean>(false);
 
   useEffect(() => {
     // Load favorites
@@ -58,11 +109,11 @@ export default function ExploreScreen() {
     setLoading(true);
     setError('');
     try {
-      const data = await api('/api/public/booking/bootstrap');
+      const data = await api<Bootstrap>('/api/public/booking/bootstrap');
       setBootstrap(data);
       setListings(data?.featuredCarSharingListings || []);
     } catch (err) {
-      setError(err?.message || t('explore.unableToLoad'));
+      setError(errMsg(err) || t('explore.unableToLoad'));
     } finally {
       setLoading(false);
     }
@@ -79,7 +130,7 @@ export default function ExploreScreen() {
       // Get location IDs from bootstrap data
       const locationIds = (bootstrap?.locations || []).map((l) => l.id).filter(Boolean);
       const searchPlaceIds = (bootstrap?.carSharingSearchPlaces || []).map((p) => p.id).filter(Boolean);
-      const body = {
+      const body: { pickupAt: string; returnAt: string; locationIds?: (string | undefined)[]; searchPlaceIds?: (string | undefined)[] } = {
         pickupAt: pickupDate.toISOString(),
         returnAt: returnDate.toISOString(),
       };
@@ -92,7 +143,7 @@ export default function ExploreScreen() {
         setSearching(false);
         return;
       }
-      const results = await api('/api/public/booking/car-sharing-search', {
+      const results = await api<Listing[] | { listings?: Listing[]; results?: Listing[] }>('/api/public/booking/car-sharing-search', {
         method: 'POST',
         body: JSON.stringify(body),
       });
@@ -112,7 +163,7 @@ export default function ExploreScreen() {
     if (!searchQuery.trim()) { setAiParsed(null); return; }
     setSearching(true);
     try {
-      const intent = await api('/api/public/booking/ai-search/intent', {
+      const intent = await api<AiParsed>('/api/public/booking/ai-search/intent', {
         method: 'POST',
         body: JSON.stringify({ query: searchQuery.trim() }),
       });
@@ -152,7 +203,9 @@ export default function ExploreScreen() {
     return true;
   });
 
-  if (loading) {
+  // Full-screen spinner only on first load; pull-to-refresh uses the
+  // FlatList's own indicator.
+  if (loading && !bootstrap) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={colors.brand} />
@@ -176,7 +229,7 @@ export default function ExploreScreen() {
     );
   }
 
-  const renderListing = ({ item: listing }) => (
+  const renderListing: ListRenderItem<Listing> = ({ item: listing }) => (
     <TouchableOpacity
       style={styles.card}
       onPress={() => router.push({ pathname: `/listing/${listing.id}`, params: { pickupAt: pickupDate.toISOString(), returnAt: returnDate.toISOString() } })}
@@ -186,7 +239,7 @@ export default function ExploreScreen() {
     >
       {listing.primaryImageUrl || listing.imageUrls?.[0] ? (
         <Image
-          source={{ uri: listing.primaryImageUrl || listing.imageUrls[0] }}
+          source={{ uri: listing.primaryImageUrl || listing.imageUrls?.[0] }}
           style={styles.cardImage}
           resizeMode="cover"
           accessibilityLabel={t('explore.photoOf', { title: listing.title || vehicleLabel(listing) })}
@@ -206,8 +259,8 @@ export default function ExploreScreen() {
           <Text style={styles.cardPrice}>{fmtMoney(listing.baseDailyRate)}{t('common.perDay')}</Text>
           <View style={styles.badges}>
             {listing.instantBook && <Text style={styles.badge}>{t('explore.instantBook')}</Text>}
-            {listing.host?.averageRating > 0 && (
-              <Text style={styles.badgeRating}>★ {Number(listing.host.averageRating).toFixed(1)}</Text>
+            {Number(listing.host?.averageRating) > 0 && (
+              <Text style={styles.badgeRating}>★ {Number(listing.host?.averageRating).toFixed(1)}</Text>
             )}
           </View>
         </View>
@@ -221,6 +274,8 @@ export default function ExploreScreen() {
       contentContainerStyle={{ paddingBottom: 40 }}
       data={filteredListings}
       keyExtractor={(l) => String(l.id)}
+      refreshing={loading}
+      onRefresh={loadBootstrap}
       renderItem={renderListing}
       initialNumToRender={6}
       maxToRenderPerBatch={8}
@@ -305,7 +360,7 @@ export default function ExploreScreen() {
           />
         )}
         <Text style={styles.dateTripLength}>
-          {t('explore.dayTrip', { count: Math.round((returnDate - pickupDate) / 86400000) })}
+          {t('explore.dayTrip', { count: Math.round((returnDate.getTime() - pickupDate.getTime()) / 86400000) })}
         </Text>
 
         {/* Search bar */}

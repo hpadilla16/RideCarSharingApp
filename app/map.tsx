@@ -11,7 +11,31 @@ import { useTranslation } from 'react-i18next';
 
 const { width, height } = Dimensions.get('window');
 
-const DEFAULT_REGION = {
+interface Region {
+  latitude: number;
+  longitude: number;
+  latitudeDelta: number;
+  longitudeDelta: number;
+}
+
+interface ApiListing {
+  id: string;
+  title?: string;
+  baseDailyRate?: number | string;
+  instantBook?: boolean;
+  location?: { latitude?: number; longitude?: number } | null;
+  vehicle?: { year?: number | string; make?: string; model?: string } | null;
+  [key: string]: unknown;
+}
+
+interface MapListing extends ApiListing {
+  _lat: number;
+  _lng: number;
+}
+
+const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+const DEFAULT_REGION: Region = {
   latitude: 18.4655,
   longitude: -66.1057,
   latitudeDelta: 0.15,
@@ -21,9 +45,9 @@ const DEFAULT_REGION = {
 export default function MapScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const [region, setRegion] = useState(DEFAULT_REGION);
-  const [listings, setListings] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [region, setRegion] = useState<Region>(DEFAULT_REGION);
+  const [listings, setListings] = useState<MapListing[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     (async () => {
@@ -39,16 +63,16 @@ export default function MapScreen() {
             longitudeDelta: 0.12,
           });
         }
-      } catch (err) { logWarn('Location unavailable: ' + (err?.message || err)); }
+      } catch (err) { logWarn('Location unavailable: ' + errMsg(err)); }
 
       // Load listings
       try {
-        const data = await api('/api/public/booking/bootstrap');
+        const data = await api<{ featuredCarSharingListings?: ApiListing[] }>('/api/public/booking/bootstrap');
         const all = data?.featuredCarSharingListings || [];
         // Filter listings that have location coords
         const withCoords = all.filter((l) => l.location?.latitude && l.location?.longitude);
         // If no coords, place them near the default region with slight offsets
-        const mapped = all.map((l, idx) => ({
+        const mapped: MapListing[] = all.map((l, idx) => ({
           ...l,
           _lat: l.location?.latitude || (DEFAULT_REGION.latitude + (Math.random() - 0.5) * 0.08),
           _lng: l.location?.longitude || (DEFAULT_REGION.longitude + (Math.random() - 0.5) * 0.08),

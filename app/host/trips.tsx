@@ -7,20 +7,33 @@ import { colors, spacing, fontSize } from '../../lib/theme';
 import { logError } from '../../lib/logger';
 import { useTranslation } from 'react-i18next';
 
+interface HostTrip {
+  id: string;
+  tripCode?: string;
+  status?: string;
+  totalPrice?: number | string | null;
+  scheduledPickupAt?: string;
+  guest?: { firstName?: string; lastName?: string } | null;
+  listing?: { title?: string } | null;
+  [key: string]: unknown;
+}
+
+const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
 export default function HostTripsScreen() {
   const { t: i18nT } = useTranslation();
   const t = i18nT;
   const router = useRouter();
-  const [trips, setTrips] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [msg, setMsg] = useState('');
+  const [trips, setTrips] = useState<HostTrip[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [msg, setMsg] = useState<string>('');
 
   useEffect(() => {
     (async () => {
       const { token } = await readHostSession();
       if (!token) { router.replace('/host/login'); return; }
       try {
-        const data = await hostApi('/dashboard');
+        const data = await hostApi<{ trips?: HostTrip[] }>('/dashboard');
         setTrips(data?.trips || []);
       } catch (err) {
         logError(err, { screen: 'host/trips' });
@@ -29,13 +42,13 @@ export default function HostTripsScreen() {
     })();
   }, []);
 
-  async function updateStatus(tripId, status) {
+  async function updateStatus(tripId: string, status: string) {
     try {
       await hostApi(`/trips/${tripId}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
       setMsg(status === 'CONFIRMED' ? t('hostTrips.tripConfirmed') : t('hostTrips.tripCancelled'));
-      const data = await hostApi('/dashboard');
+      const data = await hostApi<{ trips?: HostTrip[] }>('/dashboard');
       setTrips(data?.trips || []);
-    } catch (err) { setMsg(err.message); }
+    } catch (err) { setMsg(errMsg(err)); }
   }
 
   return (

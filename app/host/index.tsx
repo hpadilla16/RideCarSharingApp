@@ -5,14 +5,41 @@ import { hostApi, readHostSession, clearHostSession } from '../../lib/hostApi';
 import { fmtMoney } from '../../lib/format';
 import { colors, spacing, fontSize } from '../../lib/theme';
 import { useTranslation } from 'react-i18next';
+import type { HostUser } from '../../lib/hostApi';
+import type { ApiError } from '../../lib/api';
+
+interface DashboardListing {
+  id: string;
+  title?: string;
+  baseDailyRate?: number | string | null;
+  vehicle?: { year?: number | string; make?: string; model?: string } | null;
+  [key: string]: unknown;
+}
+
+interface DashboardTrip {
+  id: string;
+  tripCode?: string;
+  status?: string;
+  [key: string]: unknown;
+}
+
+interface DashboardData {
+  hostProfile?: { displayName?: string; email?: string; averageRating?: number | string; payoutEnabled?: boolean } | null;
+  metrics?: { publishedListings?: number; totalTrips?: number; activeTrips?: number };
+  listings?: DashboardListing[];
+  trips?: DashboardTrip[];
+  [key: string]: unknown;
+}
+
+const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 export default function HostDashboard() {
   const { t } = useTranslation();
   const router = useRouter();
-  const [dashboard, setDashboard] = useState(null);
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null);
+  const [user, setUser] = useState<HostUser | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>('');
 
   useEffect(() => {
     (async () => {
@@ -20,11 +47,11 @@ export default function HostDashboard() {
       if (!token) { router.replace('/host/login'); return; }
       setUser(u);
       try {
-        const data = await hostApi('/dashboard');
+        const data = await hostApi<DashboardData>('/dashboard');
         setDashboard(data);
       } catch (err) {
-        if (err.status === 401) { router.replace('/host/login'); return; }
-        setError(err.message);
+        if ((err as ApiError).status === 401) { router.replace('/host/login'); return; }
+        setError(errMsg(err));
       } finally { setLoading(false); }
     })();
   }, []);
@@ -45,7 +72,7 @@ export default function HostDashboard() {
     <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.lg, paddingBottom: 60 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg }}>
         <View>
-          <Text style={styles.title}>{profile?.displayName || user?.fullName || t('hostDashboard.host')}</Text>
+          <Text style={styles.title}>{profile?.displayName || (user?.fullName as string | undefined) || t('hostDashboard.host')}</Text>
           <Text style={{ color: colors.muted, fontSize: fontSize.sm }}>{profile?.email || ''}</Text>
         </View>
         <TouchableOpacity onPress={handleLogout} accessibilityRole="button"><Text style={{ color: colors.error, fontWeight: '600' }}>{t('common.signOut')}</Text></TouchableOpacity>

@@ -10,17 +10,70 @@ import { logWarn } from '../lib/logger';
 import { validateCustomerInfo } from '../lib/validation';
 import { useTranslation } from 'react-i18next';
 
+interface Tier {
+  id: string;
+  label: string;
+  price: string;
+  desc: string;
+  deductible?: string;
+  limit?: string;
+  recommended?: boolean;
+}
+
+interface Addon {
+  id: string;
+  label: string;
+  price: string;
+  desc: string;
+}
+
+interface ApiTier {
+  id: string;
+  label?: string;
+  description?: string;
+  pricePerDay?: number | string;
+  deductibleReimbursementMax?: number | string;
+  roadsideAssistance?: boolean;
+}
+
+interface ApiAddon {
+  id: string;
+  label?: string;
+  description?: string;
+  pricePerDay?: number | string;
+  hostOffered?: boolean;
+  covers?: string[];
+}
+
+interface CheckoutListing {
+  id: string;
+  title?: string;
+  baseDailyRate?: number | string | null;
+  location?: { id?: string } | null;
+  vehicle?: { year?: number | string; make?: string; model?: string } | null;
+  [key: string]: unknown;
+}
+
+interface CustomerForm {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+}
+
+const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
 // Fallbacks if /policies fetch fails — keep in sync with backend
 // car-sharing-commission.js / car-sharing-policies.js.
-const FALLBACK_TIERS = [
+const FALLBACK_TIERS: Tier[] = [
   { id: 'BASIC', label: 'Basic', price: 'Free', desc: 'No deductible reimbursement — you pay for all damages and file with host\'s insurer directly', deductible: 'N/A', limit: 'N/A' },
   { id: 'STANDARD', label: 'Standard', price: '$12/day', desc: 'Recommended — Ride reimburses the host\'s insurance deductible so you don\'t pay out of pocket', deductible: 'Up to $1,000', limit: 'Host deductible', recommended: true },
   { id: 'PREMIUM', label: 'Premium', price: '$22/day', desc: 'Ride reimburses host\'s insurance deductible + roadside assistance included', deductible: 'Up to $2,500', limit: 'Host deductible + roadside' },
 ];
 
-const ADDON_EMOJI = { TIRE_PROTECTION: '🛞', GLASS_PROTECTION: '🪟', ROADSIDE_ASSISTANCE: '🚨', TOLL_PASS: '🛣' };
+const ADDON_EMOJI: Record<string, string> = { TIRE_PROTECTION: '🛞', GLASS_PROTECTION: '🪟', ROADSIDE_ASSISTANCE: '🚨', TOLL_PASS: '🛣' };
 
-const FALLBACK_ADDONS = [
+const FALLBACK_ADDONS: Addon[] = [
   { id: 'TIRE_PROTECTION', label: '🛞 Tire Protection', price: '$5/day', desc: 'Blowouts, flat tires, rim damage from road hazards' },
   { id: 'GLASS_PROTECTION', label: '🪟 Glass Protection', price: '$4/day', desc: 'Windshield chips/cracks, window and mirror glass' },
   { id: 'ROADSIDE_ASSISTANCE', label: '🚨 Roadside Assistance', price: '$6/day', desc: 'Towing, jump start, flat change, lockout, fuel delivery' },
@@ -29,15 +82,15 @@ const FALLBACK_ADDONS = [
 
 const FALLBACK_EXCLUSIONS = 'Tires, glass/windshield, wear and tear, mechanical breakdown, interior damage from normal use, personal property, liability to others, unauthorized drivers, off-road or illegal use.';
 
-function fmtPerDay(pricePerDay) {
+function fmtPerDay(pricePerDay: number | string | null | undefined): string {
   const n = Number(pricePerDay || 0);
   if (n <= 0) return 'Free';
   return `$${Number.isInteger(n) ? n : n.toFixed(2)}/day`;
 }
 
-function tiersFromApi(apiTiers) {
+function tiersFromApi(apiTiers: Record<string, ApiTier> | null | undefined): Tier[] | null {
   if (!apiTiers || typeof apiTiers !== 'object') return null;
-  const list = ['BASIC', 'STANDARD', 'PREMIUM']
+  const list: Tier[] = ['BASIC', 'STANDARD', 'PREMIUM']
     .map((id) => apiTiers[id])
     .filter(Boolean)
     .map((t) => ({
@@ -52,9 +105,9 @@ function tiersFromApi(apiTiers) {
   return list.length >= 2 ? list : null;
 }
 
-function addonsFromApi(apiAddons) {
+function addonsFromApi(apiAddons: Record<string, ApiAddon> | null | undefined): Addon[] | null {
   if (!apiAddons || typeof apiAddons !== 'object') return null;
-  const list = Object.values(apiAddons)
+  const list: Addon[] = Object.values(apiAddons)
     .filter((a) => a && a.id && a.hostOffered !== false)
     .map((a) => ({
       id: a.id,
@@ -65,7 +118,7 @@ function addonsFromApi(apiAddons) {
   return list.length ? list : null;
 }
 
-function isAllowedPaymentUrl(url) {
+function isAllowedPaymentUrl(url: string | null | undefined): boolean {
   try {
     const u = new URL(String(url || ''));
     if (u.protocol !== 'https:' && u.protocol !== 'about:') return false;
@@ -79,30 +132,30 @@ function isAllowedPaymentUrl(url) {
 
 export default function CheckoutScreen() {
   const { t } = useTranslation();
-  const { listingId, pickupAt, returnAt } = useLocalSearchParams();
+  const { listingId, pickupAt, returnAt } = useLocalSearchParams<{ listingId?: string; pickupAt?: string; returnAt?: string }>();
   const router = useRouter();
-  const [listing, setListing] = useState(null);
-  const [step, setStep] = useState(1);
-  const [customer, setCustomer] = useState({ firstName: '', lastName: '', email: '', phone: '' });
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
-  const [paymentUrl, setPaymentUrl] = useState(null);
-  const [protectionTier, setProtectionTier] = useState('STANDARD');
-  const [declinedProtection, setDeclinedProtection] = useState(false);
-  const [ownInsuranceConfirmed, setOwnInsuranceConfirmed] = useState(false);
-  const [tiers, setTiers] = useState(FALLBACK_TIERS);
-  const [addons, setAddons] = useState(FALLBACK_ADDONS);
-  const [exclusionsText, setExclusionsText] = useState(FALLBACK_EXCLUSIONS);
+  const [listing, setListing] = useState<CheckoutListing | null>(null);
+  const [step, setStep] = useState<number | 'payment'>(1);
+  const [customer, setCustomer] = useState<CustomerForm>({ firstName: '', lastName: '', email: '', phone: '' });
+  const [loading, setLoading] = useState<boolean>(true);
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const [protectionTier, setProtectionTier] = useState<string>('STANDARD');
+  const [declinedProtection, setDeclinedProtection] = useState<boolean>(false);
+  const [ownInsuranceConfirmed, setOwnInsuranceConfirmed] = useState<boolean>(false);
+  const [tiers, setTiers] = useState<Tier[]>(FALLBACK_TIERS);
+  const [addons, setAddons] = useState<Addon[]>(FALLBACK_ADDONS);
+  const [exclusionsText, setExclusionsText] = useState<string>(FALLBACK_EXCLUSIONS);
 
   useEffect(() => {
     (async () => {
       try {
-        const boot = await api('/api/public/booking/bootstrap');
+        const boot = await api<{ featuredCarSharingListings?: CheckoutListing[] }>('/api/public/booking/bootstrap');
         const match = (boot?.featuredCarSharingListings || []).find((l) => l.id === listingId);
         setListing(match || null);
       } catch (err) {
-        setError(err?.message || t('checkout.unableToLoadListing'));
+        setError(errMsg(err) || t('checkout.unableToLoadListing'));
       } finally {
         setLoading(false);
       }
@@ -111,7 +164,11 @@ export default function CheckoutScreen() {
     // pricing changes don't require an app release. Fallbacks above.
     (async () => {
       try {
-        const data = await api('/api/public/booking/policies');
+        const data = await api<{
+          protectionTiers?: Record<string, ApiTier>;
+          protectionExclusions?: string[];
+          policies?: { addons?: Record<string, ApiAddon> };
+        }>('/api/public/booking/policies');
         const apiTiers = tiersFromApi(data?.protectionTiers);
         if (apiTiers) setTiers(apiTiers);
         const apiAddons = addonsFromApi(data?.policies?.addons);
@@ -120,7 +177,7 @@ export default function CheckoutScreen() {
           setExclusionsText(data.protectionExclusions.join(' · '));
         }
       } catch (err) {
-        logWarn('Failed to load policies, using fallback copy: ' + (err?.message || err));
+        logWarn('Failed to load policies, using fallback copy: ' + errMsg(err));
       }
     })();
   }, [listingId]);
@@ -149,7 +206,12 @@ export default function CheckoutScreen() {
     setSubmitting(true);
     setError('');
     try {
-      const result = await api('/api/public/booking/checkout', {
+      const result = await api<{
+        nextActions?: { link?: string }[];
+        paymentLink?: string;
+        portalLink?: string;
+        [key: string]: unknown;
+      }>('/api/public/booking/checkout', {
         method: 'POST',
         body: JSON.stringify({
           searchType: 'CAR_SHARING',
@@ -173,7 +235,7 @@ export default function CheckoutScreen() {
         setStep(3);
       }
     } catch (err) {
-      setError(err?.message || t('checkout.unableToCompleteBooking'));
+      setError(errMsg(err) || t('checkout.unableToCompleteBooking'));
     } finally {
       setSubmitting(false);
     }
@@ -247,9 +309,9 @@ export default function CheckoutScreen() {
       <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.lg, paddingBottom: 60 }}>
         {/* Progress */}
         <View style={styles.progressRow}>
-          <View style={[styles.progressDot, step >= 1 && styles.progressDotActive]} />
-          <View style={[styles.progressLine, step >= 2 && styles.progressLineActive]} />
-          <View style={[styles.progressDot, step >= 2 && styles.progressDotActive]} />
+          <View style={[styles.progressDot, Number(step) >= 1 && styles.progressDotActive]} />
+          <View style={[styles.progressLine, Number(step) >= 2 && styles.progressLineActive]} />
+          <View style={[styles.progressDot, Number(step) >= 2 && styles.progressDotActive]} />
         </View>
         <Text style={styles.stepLabel}>{t('checkout.stepOf', { step, total: 2 })}</Text>
 

@@ -10,7 +10,28 @@ import { useTranslation } from 'react-i18next';
 
 const MAX_PHOTOS = 6;
 
-function parsePhotos(listing) {
+interface HostListing {
+  id: string;
+  title?: string;
+  baseDailyRate?: number | string | null;
+  status?: string;
+  description?: string;
+  instantBook?: boolean;
+  photosJson?: string;
+  [key: string]: unknown;
+}
+
+interface EditForm {
+  title?: string;
+  baseDailyRate?: number | string;
+  status?: string;
+  description?: string;
+  instantBook?: boolean;
+}
+
+const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+function parsePhotos(listing: HostListing | null | undefined): string[] {
   try {
     const arr = JSON.parse(listing?.photosJson || '[]');
     return Array.isArray(arr) ? arr.filter(Boolean).slice(0, MAX_PHOTOS) : [];
@@ -22,20 +43,20 @@ function parsePhotos(listing) {
 export default function HostListingsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const [listings, setListings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [editId, setEditId] = useState(null);
-  const [editForm, setEditForm] = useState({});
-  const [editPhotos, setEditPhotos] = useState([]);
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState('');
+  const [listings, setListings] = useState<HostListing[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<EditForm>({});
+  const [editPhotos, setEditPhotos] = useState<string[]>([]);
+  const [saving, setSaving] = useState<boolean>(false);
+  const [msg, setMsg] = useState<string>('');
 
   useEffect(() => {
     (async () => {
       const { token } = await readHostSession();
       if (!token) { router.replace('/host/login'); return; }
       try {
-        const data = await hostApi('/dashboard');
+        const data = await hostApi<{ listings?: HostListing[] }>('/dashboard');
         setListings(data?.listings || []);
       } catch (err) {
         logError(err, { screen: 'host/listings' });
@@ -44,7 +65,7 @@ export default function HostListingsScreen() {
     })();
   }, []);
 
-  function startEdit(l) {
+  function startEdit(l: HostListing) {
     setEditId(l.id);
     setEditForm({ title: l.title || '', baseDailyRate: l.baseDailyRate || '', status: l.status || 'DRAFT', description: l.description || '', instantBook: !!l.instantBook });
     setEditPhotos(parsePhotos(l));
@@ -70,7 +91,7 @@ export default function HostListingsScreen() {
     }
   }
 
-  function removePhoto(idx) {
+  function removePhoto(idx: number) {
     setEditPhotos((p) => p.filter((_, i) => i !== idx));
   }
 
@@ -87,10 +108,10 @@ export default function HostListingsScreen() {
       });
       setMsg(t('hostListings.updated'));
       setEditId(null);
-      const data = await hostApi('/dashboard');
+      const data = await hostApi<{ listings?: HostListing[] }>('/dashboard');
       setListings(data?.listings || []);
     } catch (err) {
-      setMsg(err.message);
+      setMsg(errMsg(err));
     } finally {
       setSaving(false);
     }
