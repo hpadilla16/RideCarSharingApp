@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { hostApi, readHostSession } from '../../lib/hostApi';
 import { fmtMoney, fmtDateTime } from '../../lib/format';
 import { colors, spacing, fontSize } from '../../lib/theme';
+import { logError } from '../../lib/logger';
 
 export default function HostEarningsScreen() {
   const router = useRouter();
@@ -14,7 +15,7 @@ export default function HostEarningsScreen() {
     (async () => {
       const { token } = await readHostSession();
       if (!token) { router.replace('/host/login'); return; }
-      try { setDashboard(await hostApi('/dashboard')); } catch {} finally { setLoading(false); }
+      try { setDashboard(await hostApi('/dashboard')); } catch (err) { logError(err, { screen: 'host/earnings' }); } finally { setLoading(false); }
     })();
   }, []);
 

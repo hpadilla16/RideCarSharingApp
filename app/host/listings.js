@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { hostApi, readHostSession } from '../../lib/hostApi';
 import { fmtMoney } from '../../lib/format';
 import { colors, spacing, fontSize } from '../../lib/theme';
+import { logError } from '../../lib/logger';
 
 export default function HostListingsScreen() {
   const router = useRouter();
@@ -20,7 +21,10 @@ export default function HostListingsScreen() {
       try {
         const data = await hostApi('/dashboard');
         setListings(data?.listings || []);
-      } catch {} finally { setLoading(false); }
+      } catch (err) {
+        logError(err, { screen: 'host/listings' });
+        setMsg('Unable to load listings. Pull to refresh or try again later.');
+      } finally { setLoading(false); }
     })();
   }, []);
 

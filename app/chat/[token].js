@@ -68,7 +68,7 @@ export default function TripChatScreen() {
     try {
       const msg = await api(`${chatPath}/action`, { method: 'POST', body: JSON.stringify({ action }) });
       setRoom((r) => r ? { ...r, messages: [...(r.messages || []), msg] } : r);
-    } catch {}
+    } catch (err) { setError(err?.message || 'Unable to send'); }
   }
 
   async function savePickup() {

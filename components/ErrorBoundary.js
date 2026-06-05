@@ -1,5 +1,6 @@
 import { Component } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { logError } from '../lib/logger';
 
 export default class ErrorBoundary extends Component {
   state = { error: null };
@@ -9,8 +10,7 @@ export default class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, info) {
-    // Hook for a crash-reporting service (e.g. Sentry) later.
-    console.error('Unhandled app error:', error, info?.componentStack);
+    logError(error, { componentStack: info?.componentStack, source: 'ErrorBoundary' });
   }
 
   render() {

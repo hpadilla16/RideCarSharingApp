@@ -6,6 +6,7 @@ import * as Location from 'expo-location';
 import { api } from '../lib/api';
 import { fmtMoney, vehicleLabel } from '../lib/format';
 import { colors, spacing, fontSize } from '../lib/theme';
+import { logError, logWarn } from '../lib/logger';
 
 const { width, height } = Dimensions.get('window');
 
@@ -36,7 +37,7 @@ export default function MapScreen() {
             longitudeDelta: 0.12,
           });
         }
-      } catch {}
+      } catch (err) { logWarn('Location unavailable: ' + (err?.message || err)); }
 
       // Load listings
       try {
@@ -51,7 +52,7 @@ export default function MapScreen() {
           _lng: l.location?.longitude || (DEFAULT_REGION.longitude + (Math.random() - 0.5) * 0.08),
         }));
         setListings(mapped);
-      } catch {}
+      } catch (err) { logError(err, { screen: 'map' }); }
       setLoading(false);
     })();
   }, []);

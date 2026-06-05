@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import { api } from '../lib/api';
+import { logError } from '../lib/logger';
 import { colors, spacing, fontSize } from '../lib/theme';
 
 const PHOTO_SLOTS = [
@@ -14,12 +16,22 @@ const PHOTO_SLOTS = [
   { id: 'damage', label: 'Existing Damage (if any)' },
 ];
 
+function assetToEntry(asset) {
+  // Keep uri for display; build a base64 data URL for upload.
+  const mime = asset.mimeType || 'image/jpeg';
+  return {
+    uri: asset.uri,
+    dataUrl: asset.base64 ? `data:${mime};base64,${asset.base64}` : null,
+  };
+}
+
 export default function InspectionScreen() {
-  const { tripCode } = useLocalSearchParams();
+  const { tripCode, phase } = useLocalSearchParams();
   const router = useRouter();
   const [photos, setPhotos] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [error, setError] = useState('');
 
   async function takePhoto(slotId) {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -30,12 +42,13 @@ export default function InspectionScreen() {
 
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
-      quality: 0.7,
+      quality: 0.5,
       allowsEditing: false,
+      base64: true,
     });
 
     if (!result.canceled && result.assets?.[0]) {
-      setPhotos((prev) => ({ ...prev, [slotId]: result.assets[0].uri }));
+      setPhotos((prev) => ({ ...prev, [slotId]: assetToEntry(result.assets[0]) }));
     }
   }
 
@@ -48,27 +61,44 @@ export default function InspectionScreen() {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      quality: 0.7,
+      quality: 0.5,
       allowsEditing: false,
+      base64: true,
     });
 
     if (!result.canceled && result.assets?.[0]) {
-      setPhotos((prev) => ({ ...prev, [slotId]: result.assets[0].uri }));
+      setPhotos((prev) => ({ ...prev, [slotId]: assetToEntry(result.assets[0]) }));
     }
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     const photoCount = Object.keys(photos).length;
     if (photoCount < 4) {
       Alert.alert('More Photos Needed', 'Please take at least 4 photos (front, back, left, right) before submitting.');
       return;
     }
+    if (!tripCode) {
+      Alert.alert('Missing Trip', 'No trip code found for this inspection.');
+      return;
+    }
     setSubmitting(true);
-    // In production: upload photos to backend
-    setTimeout(() => {
-      setSubmitting(false);
+    setError('');
+    try {
+      const body = { phase: phase === 'RETURN' ? 'RETURN' : 'PICKUP', photos: {} };
+      for (const [slot, entry] of Object.entries(photos)) {
+        if (entry?.dataUrl) body.photos[slot] = entry.dataUrl;
+      }
+      await api(`/api/public/booking/trips/${encodeURIComponent(tripCode)}/inspection-photos`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
       setDone(true);
-    }, 1500);
+    } catch (err) {
+      logError(err, { screen: 'inspection', tripCode });
+      setError(err?.message || 'Upload failed. Check your connection and try again.');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (done) {
@@ -101,7 +131,7 @@ export default function InspectionScreen() {
             </View>
             {photos[slot.id] ? (
               <View>
-                <Image source={{ uri: photos[slot.id] }} style={styles.photo} resizeMode="cover" />
+                <Image source={{ uri: photos[slot.id].uri }} style={styles.photo} resizeMode="cover" />
                 <TouchableOpacity onPress={() => setPhotos((p) => { const next = { ...p }; delete next[slot.id]; return next; })}>
                   <Text style={styles.retake}>Retake</Text>
                 </TouchableOpacity>
@@ -123,6 +153,8 @@ export default function InspectionScreen() {
       <View style={styles.summary}>
         <Text style={styles.summaryText}>{Object.keys(photos).length} of {PHOTO_SLOTS.length} photos taken</Text>
       </View>
+
+      {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <TouchableOpacity
         style={[styles.btn, Object.keys(photos).length < 4 && { opacity: 0.5 }]}
@@ -154,6 +186,7 @@ const styles = StyleSheet.create({
   galleryBtnText: { color: colors.ink, fontWeight: '600', fontSize: fontSize.sm },
   summary: { paddingVertical: spacing.md, alignItems: 'center' },
   summaryText: { fontSize: fontSize.sm, fontWeight: '600', color: colors.muted },
+  error: { color: colors.error, fontSize: fontSize.sm, textAlign: 'center', marginBottom: spacing.sm },
   btn: { height: 52, borderRadius: 14, backgroundColor: colors.brand, justifyContent: 'center', alignItems: 'center', marginTop: spacing.sm },
   btnText: { color: colors.white, fontWeight: '800', fontSize: fontSize.md },
 });

@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { hostApi, readHostSession } from '../../lib/hostApi';
 import { fmtMoney, fmtDateTime } from '../../lib/format';
 import { colors, spacing, fontSize } from '../../lib/theme';
+import { logError } from '../../lib/logger';
 
 export default function HostTripsScreen() {
   const router = useRouter();
@@ -18,7 +19,10 @@ export default function HostTripsScreen() {
       try {
         const data = await hostApi('/dashboard');
         setTrips(data?.trips || []);
-      } catch {} finally { setLoading(false); }
+      } catch (err) {
+        logError(err, { screen: 'host/trips' });
+        setMsg('Unable to load trips. Try again later.');
+      } finally { setLoading(false); }
     })();
   }, []);
 
