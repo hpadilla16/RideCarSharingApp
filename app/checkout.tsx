@@ -5,45 +5,12 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api } from '../lib/api';
 import { fmtMoney, vehicleLabel } from '../lib/format';
 import { colors, spacing, fontSize } from '../lib/theme';
-import { PAYMENT_ALLOWED_HOSTS, PAYMENT_SUCCESS_PATH, PAYMENT_CANCEL_PATH } from '../lib/config';
+import { PAYMENT_SUCCESS_PATH, PAYMENT_CANCEL_PATH } from '../lib/config';
 import { logWarn } from '../lib/logger';
 import { validateCustomerInfo } from '../lib/validation';
+import { tiersFromApi, addonsFromApi, isAllowedPaymentUrl } from '../lib/checkoutPolicies';
+import type { Tier, Addon, ApiTier, ApiAddon } from '../lib/checkoutPolicies';
 import { useTranslation } from 'react-i18next';
-
-interface Tier {
-  id: string;
-  label: string;
-  price: string;
-  desc: string;
-  deductible?: string;
-  limit?: string;
-  recommended?: boolean;
-}
-
-interface Addon {
-  id: string;
-  label: string;
-  price: string;
-  desc: string;
-}
-
-interface ApiTier {
-  id: string;
-  label?: string;
-  description?: string;
-  pricePerDay?: number | string;
-  deductibleReimbursementMax?: number | string;
-  roadsideAssistance?: boolean;
-}
-
-interface ApiAddon {
-  id: string;
-  label?: string;
-  description?: string;
-  pricePerDay?: number | string;
-  hostOffered?: boolean;
-  covers?: string[];
-}
 
 interface CheckoutListing {
   id: string;
@@ -71,8 +38,6 @@ const FALLBACK_TIERS: Tier[] = [
   { id: 'PREMIUM', label: 'Premium', price: '$22/day', desc: 'Ride reimburses host\'s insurance deductible + roadside assistance included', deductible: 'Up to $2,500', limit: 'Host deductible + roadside' },
 ];
 
-const ADDON_EMOJI: Record<string, string> = { TIRE_PROTECTION: '🛞', GLASS_PROTECTION: '🪟', ROADSIDE_ASSISTANCE: '🚨', TOLL_PASS: '🛣' };
-
 const FALLBACK_ADDONS: Addon[] = [
   { id: 'TIRE_PROTECTION', label: '🛞 Tire Protection', price: '$5/day', desc: 'Blowouts, flat tires, rim damage from road hazards' },
   { id: 'GLASS_PROTECTION', label: '🪟 Glass Protection', price: '$4/day', desc: 'Windshield chips/cracks, window and mirror glass' },
@@ -81,54 +46,6 @@ const FALLBACK_ADDONS: Addon[] = [
 ];
 
 const FALLBACK_EXCLUSIONS = 'Tires, glass/windshield, wear and tear, mechanical breakdown, interior damage from normal use, personal property, liability to others, unauthorized drivers, off-road or illegal use.';
-
-function fmtPerDay(pricePerDay: number | string | null | undefined): string {
-  const n = Number(pricePerDay || 0);
-  if (n <= 0) return 'Free';
-  return `$${Number.isInteger(n) ? n : n.toFixed(2)}/day`;
-}
-
-function tiersFromApi(apiTiers: Record<string, ApiTier> | null | undefined): Tier[] | null {
-  if (!apiTiers || typeof apiTiers !== 'object') return null;
-  const list: Tier[] = ['BASIC', 'STANDARD', 'PREMIUM']
-    .map((id) => apiTiers[id])
-    .filter(Boolean)
-    .map((t) => ({
-      id: t.id,
-      label: t.label || t.id,
-      price: fmtPerDay(t.pricePerDay),
-      desc: t.description || '',
-      deductible: Number(t.deductibleReimbursementMax) > 0 ? `Up to $${Number(t.deductibleReimbursementMax).toLocaleString()}` : 'N/A',
-      limit: Number(t.deductibleReimbursementMax) > 0 ? `Host deductible${t.roadsideAssistance ? ' + roadside' : ''}` : 'N/A',
-      recommended: t.id === 'STANDARD',
-    }));
-  return list.length >= 2 ? list : null;
-}
-
-function addonsFromApi(apiAddons: Record<string, ApiAddon> | null | undefined): Addon[] | null {
-  if (!apiAddons || typeof apiAddons !== 'object') return null;
-  const list: Addon[] = Object.values(apiAddons)
-    .filter((a) => a && a.id && a.hostOffered !== false)
-    .map((a) => ({
-      id: a.id,
-      label: `${ADDON_EMOJI[a.id] || '✚'} ${a.label || a.id}`,
-      price: fmtPerDay(a.pricePerDay),
-      desc: Array.isArray(a.covers) && a.covers.length ? a.covers.join(', ') : (a.description || ''),
-    }));
-  return list.length ? list : null;
-}
-
-function isAllowedPaymentUrl(url: string | null | undefined): boolean {
-  try {
-    const u = new URL(String(url || ''));
-    if (u.protocol !== 'https:' && u.protocol !== 'about:') return false;
-    return u.protocol === 'about:' || PAYMENT_ALLOWED_HOSTS.some(
-      (host) => u.hostname === host || u.hostname.endsWith(`.${host}`)
-    );
-  } catch {
-    return false;
-  }
-}
 
 export default function CheckoutScreen() {
   const { t } = useTranslation();
